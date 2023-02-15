@@ -1,0 +1,380 @@
+@charset "UTF-8";
+
+/* Significant borrowing from Skeleton, Barebones, and water.css */
+/* Also put link to evergreen source */
+/* Read up on https://css-tricks.com/a-complete-guide-to-dark-mode-on-the-web/ */
+
+html {
+	/* default theme: light background, dark text, blue accent */
+	--theme-hue: 0;					/* white */
+	--accent-hue: 194;			/* blue */
+
+	--text-color-richer: hsl(var(--theme-hue), 0%, 5%);			/* #0d0d0d		*/
+	--text-color-normal: hsl(var(--theme-hue), 0%, 13%);		/* #222222 		text color; button:hover:focus color */
+	--text-color-softer: hsl(var(--theme-hue), 0%, 33%);		/* #555555 		button color; button:hover border */
+
+  --accent-color: hsl(var(--accent-hue), 86%, 57%);				/* #33C3F0 		link; button-primary bg+border; textarea,select:focus border */
+  --accent-color-hover: hsl(var(--accent-hue), 76%, 49%);	/* #1EAEDB 		link hover; button-primary:hover:focus bg+border */
+
+  --border-color: hsl(var(--theme-hue), 0%, 73%);					/* #bbbbbb		button border */
+	--border-color-softer: hsl(var(--theme-hue), 0%, 82%);	/* #d1d1d1		textarea,select,code,td,hr border	 */
+
+	--background-color: white;														/* transparent body background; textarea,select background */
+	--background-color-softer: hsl(var(--theme-hue), 0%, 95%);
+  --code-background: hsl(var(--theme-hue), 0%, 95%);			/* #f1f1f1 		code background*/
+
+  --shadow-color: hsl(var(--theme-hue), 0%, 80%);
+  --success-color: green;
+  --error-color: red;
+
+	--button-primary-color: white;
+}
+
+/*  Dark Theme */
+@media (prefers-color-scheme: idark) {
+	html {
+		/* dark theme: light background, dark text, purple accent */
+		--theme-hue: 0;					/* black */
+		--accent-hue: 270;			/* purple */
+
+		--text-color-richer: hsl(var(--theme-hue), 0%, 95%);		/* 		*/
+		--text-color-normal: hsl(var(--theme-hue), 0%, 80%);		/* text color; button:hover:focus color */
+		--text-color-softer: hsl(var(--theme-hue), 0%, 67%);		/* button color; button:hover border */
+
+		--accent-color: hsl(var(--accent-hue), 76%, 49%);				/* link; button-primary bg+border; textarea,select:focus border */
+		--accent-color-hover: hsl(var(--accent-hue), 86%, 57%);	/* link hover; button-primary:hover:focus bg+border */
+
+		--border-color: hsl(var(--theme-hue), 0%, 27%);					/* button border */
+		--border-color-softer: hsl(var(--theme-hue), 0%, 20%);	/* textarea,select,code,td,hr border	 */
+
+		--background-color: hsl(var(--theme-hue), 0%, 12%);			/* body background; textarea,select background */
+		--background-color-softer: hsl(var(--theme-hue), 0%, 18%);
+		--code-background: hsl(var(--theme-hue), 0%, 5%);				/* code background*/
+
+    --shadow-color: black;
+
+		--button-primary-color: white;
+  }
+
+}
+
+html {
+	/* Note: Skeleton was based off a 10px font sizing for REM  */
+	/* 62.5% of typical 16px browser default = 10px */
+
+	--base-font-size: 62.5%;
+
+  --font-weight-lighter: 300;
+  --font-weight-normal: 400;
+  --font-weight-heavier: 600;
+
+	--content-max-width: 68ch;
+
+  /* Apply base font size */
+  font-size: var(--base-font-size);
+  font-weight: var(--font-weight-normal);
+
+  scroll-behavior: smooth;
+
+  /* Default box-sizing: border-box as it's much nicer */
+  box-sizing: border-box;
+}
+
+/* And make that the default everywhere */
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+
+body {
+  font-size: 1.5em;
+
+  /* Pick a sans-serif font */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+
+  /* and space lines out a bit */
+  line-height: 1.4;
+
+  /* By default don't let the contents be too wide.
+  It makes lines hard to read. */
+  max-width: var(--content-max-width);
+
+  /* Then center contents */
+  margin: auto;
+
+  /* But then also make sure there's a little whitespace
+  on the sides if the screen is too narrow */
+  padding: 0 1rem;
+
+  /* Specify default text and background color
+  for body (and all its elements)*/
+  color: 	var(--text-color-normal);
+  background: var(--background-color);
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  /* Make these a little "darker" */
+  color: var(--text-color-richer);
+
+  /* And a little bolder */
+  font-weight: var(--font-weight-heavier);
+}
+
+b, strong, th, legend, label {
+  /* Make these a little "darker" */
+  color: var(--text-color-richer);
+  /* And a little bolder */
+  font-weight: var(--font-weight-heavier);
+  /* font-weight: 300;  */
+}
+
+
+blockquote {
+  /* Add a thick border line on the left side of 
+  a block quote */
+  border-left: 4px solid var(--border-color-softer);
+  /* Get rid of the large margins block quotes 
+  have by default */
+  margin: 0 0;
+  /* But keep some horizontal padding */
+  padding: 0 1em;
+}
+
+
+/* The default left padding and top margin are
+ fairly huge. Set them to something smaller */
+ol, ul {
+  padding-left: 2rem;
+  margin-top: 0;
+}
+
+/* but we still want nested elements to be indented */
+ul ul, ul ol, ol ol, ol ul {
+	margin: 1rem 0 1rem 0rem;
+	color: var(--text-color-softer);
+}
+
+/* Need a _little_ extra space between elements,
+ they look a little cramped by default */
+li {
+  margin-bottom: 0.2em;
+}
+
+fieldset {
+/* Nice rounded outline for fieldsets */
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 .125rem .25rem var(--shadow-color);
+}
+
+input, select, button, textarea {
+  /* Unset color and font so that elements will
+   inherit theme color and font */
+  color: unset;
+  background-color: unset;
+  font-family: unset;
+  font-size: unset;
+
+  /* Add a little margin on the bottom for stacking */
+  margin-bottom: 0.5rem;
+
+  /* Padding to keep the placeholder text
+  from getting crowded. (5px, but scale with
+  font size) */
+  padding: 0.3333em;
+
+  /* Replace default "3d" border with flat border */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  outline: none;
+}
+
+/* Use block layout for input elements, 
+except button, radio and checkbox as you usually
+want the labels for those to be to the
+right of them (block would put them underneath) */
+input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']):not([type='reset']),
+select {
+  display: block;
+}
+
+/* Animate input element transitions
+ (mostly for hover)  */
+button, input, textarea {
+  transition: background-color 0.1s linear,
+    border-color 0.1s linear,
+    color 0.1s linear,
+    box-shadow 0.1s linear,
+    transform 0.1s ease;
+}
+
+textarea {
+  /* This needs box-sizing: border-box; or it
+  will overflow */
+  width: 100%;
+  /* It's hard for horizontal resize to not
+  break the layout */
+  resize: vertical;
+}
+
+button, input[type='submit'], input[type='button'], input[type='reset'] {
+  /* Big chonky buttons, but size is fixed and only 
+  scales with the root font size */
+  height: 3.5rem;
+  padding: 0 3rem;
+
+  /* Make them transparent */
+  background-color: transparent;
+
+  /* Style the text nice */
+  text-decoration: none;
+  color: var(--text-color-softer);
+  font-weight: var(--font-weight-heavier);
+  font-size: 1.1rem;
+  letter-spacing: .1rem;
+  text-align: center;
+
+  /* Border buttons with accent color
+  (same a link color) */
+  border: 1px solid var(--accent-color);
+}
+
+/* Hover highlight effect */
+button:hover,
+input[type='submit']:hover,
+input[type="reset"]:hover,
+input[type='button']:hover {
+  box-shadow: 0 0 0 1px var(--accent-color-hover);
+  color: var(--text-color-normal);
+}
+
+input:focus,
+select:focus,
+button:focus,
+textarea:focus {
+  /* Highlight focused input elements
+  with accent color */
+  box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+/* Make "buttons" move down when you click them */
+input[type='checkbox']:active,
+input[type='radio']:active,
+input[type='submit']:active,
+input[type='reset']:active,
+input[type='button']:active,
+button:active {
+  transform: translateY(2px);
+}
+
+/* Make disabled buttons obviously disabled */
+input:disabled,
+select:disabled,
+button:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+/* Set placeholder text to a color in the theme */
+::placeholder {
+  color: var(--text-color-softer);
+}
+
+/* Remove the default link decoration, and
+set their color to a color in the theme */
+a {
+  text-decoration: none;
+  color: var(--accent-color);
+}
+
+/* But decorate links on hover */
+a:hover {
+  text-decoration: underline;
+}
+
+code, kbd {
+  background: var(--code-background);
+
+  /* Default to 2 and 5 pixels, but scale by font */
+  padding: .148148em .37037em;
+  /* Slightly smaller font to help differentiate */
+  font-size: 90%;
+
+  /* You don't want code to wrap */
+  white-space: nowrap;
+
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+/* So for blocks of code, we don't want to wrap and
+want to keep whitespace (if it's too wide, we
+want to scroll within the element), however, if we
+don't restrict the width, this can result in an
+extremely large `min-content` width, which can make
+layouts difficult and non-intuitive. To fix this I
+set the `pre > code` width to something small, but
+allow it to grow, using `flex: 1` (with the parent
+pre set with a `display: flex`). This allows for a
+reasonable `min-content` width, which still growing
+to fill the available space */
+pre {
+  display: flex;
+}
+
+pre > code {
+  /* 10px padding, but scale with font */
+  padding: 0.6666em;
+  /* We want code blocks to layout like blocks */
+  display: block;
+  /* Scrollable if lines are too long */
+  overflow-x: auto;
+  /* Keep whitespace */
+  white-space: pre;
+
+  /* See big comment block on `pre` */
+  width: 20ch;
+  flex: 1;
+}
+
+/* Keep (very large) images from overflowing
+their containers */
+img {
+  max-width: 100%;
+}
+
+/* Make the horizontal rule flat */
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color-softer);
+}
+
+table {
+  /* Remove borders for individual table cells */
+  border-collapse: collapse;
+
+  /* Add a small margin to the bottom for stacking */
+  margin-bottom: 0.5rem;
+
+  /* Default to full width */
+  width: 100%;
+}
+
+/* Add a little padding between table cells
+and align text left */
+td, th {
+  padding: 0.4em;
+  text-align: left;
+}
+
+/* Add a line under the header row of a table */
+th {
+  border-bottom: 1px solid var(--border-color-softer);
+}
+
+/* Alternate the background color of table rows */
+tbody tr:nth-child(even) {
+  background-color: var(--background-color-softer);
+}
