@@ -123,6 +123,7 @@ onTick(events?) onJoin onLeft onEvent
 
 
 */
+// TODO process events with an interval timer instead of on frame?
 
 // TODO add a sendObj to Channel?
 
@@ -165,19 +166,30 @@ onTick(events?) onJoin onLeft onEvent
  * @property {function(): void} onDisconnect
  */
 
+// TODO come up with a better name for this
 /** @template E */
-class EventChunker {
+export class EventChunker {
   /** @param {{ simTime: number; tickPeriodMs: number; timeChunkMs: number }} init */
   constructor({ simTime, tickPeriodMs, timeChunkMs }) {
     this.simTime = simTime;
     this.localTime = simTime;
+    this.deltaReference = 0;
     this.tickPeriodMs = tickPeriodMs;
     this.timeChunkMs = timeChunkMs;
-    /** @type {{ simTime: number; peerEvents: PeerMessage<E>[] }[]} */
+    /**
+     * @type {{
+     *   simTime: number;
+     *   dt: number;
+     *   peerEvents: PeerMessage<E>[];
+     * }[]}
+     */
     this.eventChunkQueue = [];
     /** @type {PeerMessage<E>[]} */
     this.msgQueue = [];
   }
+
+  /** @param {E} peerEvent */
+  sendEvent(peerEvent) {}
 
   /** @param {number} simTime */
   processTick(simTime) {
@@ -189,10 +201,17 @@ class EventChunker {
     for (; t <= simTime; t += this.timeChunkMs) {
       const peerEvents = shiftWhile(this.msgQueue, (msg) => msg.simTime <= t);
       // We use the time at the _end_ of the chunk, rather than the beginning.
-      this.eventChunkQueue.push({ simTime: t, peerEvents });
+      if (peerEvents.length > 0) {
+        console.log("pushing chunk", t);
+      }
+      this.eventChunkQueue.push({
+        simTime: t,
+        dt: this.timeChunkMs,
+        peerEvents,
+      });
+      this.simTime = t;
     }
-
-    this.simTime = t;
+    console.log("chunk queue length: ", this.eventChunkQueue.length);
   }
 
   /** @param {PeerMessage<E>} msg */
@@ -200,16 +219,36 @@ class EventChunker {
     this.msgQueue.push(msg);
   }
 
-  /** @param {number} dt */
-  getEvents(dt) {
-    // Don't advance time if we have no chunks in the queue (we should normally
-    // have _some_ chunks even if they are empty, and if not, we need to slow
-    // down time)
+  /** @param {number} time */
+  getEvents(time) {
+    if (this.deltaReference === 0) {
+      this.deltaReference = time;
+    }
+    const dt = time - this.deltaReference;
+    this.deltaReference = time;
+
+    // if we're too far behind, advance time to the next chunk immediately
+    const maxChunksBehind = 3;
+    if (this.eventChunkQueue.length > maxChunksBehind) {
+      const events = this.eventChunkQueue.shift();
+      if (events) {
+        this.localTime = events.simTime;
+        return events;
+      }
+    }
+
     if (this.eventChunkQueue.length > 0) {
+      // Don't advance time if we have no chunks in the queue (we should normally
+      // have _some_ chunks even if they are empty, and if not, we need to slow
+      // down time)
       this.localTime += dt;
       if (this.localTime >= this.eventChunkQueue[0].simTime) {
         // if we've advanced past the next chunk, return it
-        return this.eventChunkQueue.shift();
+        const events = this.eventChunkQueue.shift();
+        if (events?.peerEvents && events.peerEvents.length > 0) {
+          console.log("popping chunk", events.simTime);
+        }
+        return events;
       }
     }
     return undefined;
@@ -334,10 +373,19 @@ export class Server extends EventChunker {
    * @param {E} peerEvent
    */
   sendEvent(peerEvent) {
+    console.log("sendEvent", peerEvent);
+    this.sendClientEvent(this.clientId, peerEvent);
+  }
+
+  /**
+   * @param {string} clientId
+   * @param {E} peerEvent
+   */
+  sendClientEvent(clientId, peerEvent) {
     /** @type {PeerMessage<E>} */
     const msg = {
       type: "peerEvent",
-      clientId: this.clientId,
+      clientId: clientId,
       simTime: this.simTime,
       peerEvent,
     };
@@ -345,13 +393,16 @@ export class Server extends EventChunker {
       type: "peerMessage",
       msg,
     });
-    this.recvMsg(msg);
   }
   /** @param {Message<S, E>} msg */
   broadcast(msg) {
+    // TODO note this doesn't send to the message to ourselves!
     const data = JSON.stringify(msg);
-    for (let clientId in Object.keys(this.clients)) {
+    for (let clientId of Object.keys(this.clients)) {
       this.clients[clientId].send(data);
+    }
+    if (msg.type === "peerMessage") {
+      this.recvMsg(msg.msg);
     }
   }
   /** @param {Channel} channel */
@@ -364,7 +415,7 @@ export class Server extends EventChunker {
       } else {
         // TODO handle parse failure here (and other places)
         const peerEvent = JSON.parse(msg);
-        this.sendEvent(peerEvent);
+        this.sendClientEvent(clientId, peerEvent);
       }
     };
     let state = this.callbacks.getState();
@@ -419,10 +470,17 @@ export class Server extends EventChunker {
       };
       let { stop } = await start_listen({ onConnect });
       let server = new Server(token, stop, serverCallbacks);
-
+      /** @type {PeerMessage<E>} */
+      const joinMsg = {
+        type: "peerJoined",
+        clientId: server.clientId,
+        simTime: server.simTime,
+      };
+      server.recvMsg(joinMsg);
+      // server.sendEvent(joinMsg);
       return { token, server };
     };
-    return {token, start}
+    return { token, start };
   }
 }
 

@@ -1,29 +1,3 @@
-/** @param {string} node_id */
-function getContext(node_id) {
-  const canvas = document.getElementById(node_id);
-  if (!(canvas instanceof HTMLCanvasElement)) {
-    throw new Error("No canvas element");
-  }
-  const ctx = canvas.getContext("2d");
-  if (!(ctx instanceof CanvasRenderingContext2D)) {
-    throw new Error("No canvas context");
-  }
-  return ctx;
-}
-
-const ctx = getContext("canvas");
-const canvas = ctx.canvas;
-
-// resize the canvas to fill browser window dynamically
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeCanvas, false);
-
-// initialize the canvas size
-resizeCanvas();
-
 // jsdoc types for tanks
 /**
  * @typedef {Object} Tank
@@ -38,6 +12,7 @@ resizeCanvas();
  * @property {number} moving - The moving of the tank.
  */
 
+import { EventChunker } from "./webrtc-sockets.js";
 
 // jsdoc types for bullets
 /**
@@ -48,8 +23,6 @@ resizeCanvas();
  * @property {number} dx - The x coordinate of the bullet.
  * @property {number} dy - The y coordinate of the bullet.
  */
-/** @type {Bullet[]} */
-const bullets = [];
 
 // jsdoc types for actions (breaking out the different types of actions)
 /**
@@ -68,72 +41,111 @@ const bullets = [];
  * @property {boolean} payload - The payload of the action.
  */
 
-/** @param {MoveAction | TurnAction | FireAction} action */
-function sendEvent(action) {
-  switch (action.type) {
-    case "move":
-      tank.moving = action.payload;
-      break;
-    case "turn":
-      tank.turning = action.payload;
-      break;
-    case "fire":
-      tank.isFiring = action.payload;
-      break;
-  }
+/** @typedef {MoveAction | TurnAction | FireAction} TankAction */
+
+/**
+ * @param {GameState} state
+ * @param {EventChunker<TankAction>} network
+ */
+export function TankGameHandlers(state, network) {
+  /** @param {CustomEvent} e */
+  const onframe = (e) => {
+    const canvas = e.target;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error("not a canvas");
+    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("no context");
+    }
+    const { time } = e.detail;
+    const events = network.getEvents(time);
+    if (events) {
+      const { peerEvents, dt } = events;
+      for (const event of peerEvents) {
+        console.log("Peer Event: ", event);
+        switch (event.type) {
+          case "peerJoined":
+            state.addTank(event.clientId);
+            break;
+          case "peerLeft":
+            state.removeTank(event.clientId);
+            break;
+          case "peerEvent":
+            switch (event.peerEvent.type) {
+              case "move":
+                state.tanks[event.clientId].moving = event.peerEvent.payload;
+                break;
+              case "turn":
+                state.tanks[event.clientId].turning = event.peerEvent.payload;
+                break;
+              case "fire":
+                state.tanks[event.clientId].isFiring = event.peerEvent.payload;
+                break;
+            }
+            break;
+        }
+      }
+      state.update(dt / 1000);
+      draw(state, ctx);
+      // console.log(simTime, peerEvents);
+    }
+  };
+  // keydown handler
+  /** @param {KeyboardEvent} e */
+  const onkeydown = (e) => {
+    // console.log(e);
+    switch (e.key) {
+      case "ArrowUp":
+        network.sendEvent({ type: "move", payload: 1 });
+        break;
+      case "ArrowDown":
+        network.sendEvent({ type: "move", payload: -1 });
+        break;
+      case "ArrowLeft":
+        network.sendEvent({ type: "turn", payload: -1 });
+        break;
+      case "ArrowRight":
+        network.sendEvent({ type: "turn", payload: 1 });
+        break;
+      case " ":
+        network.sendEvent({ type: "fire", payload: true });
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+
+  // keyup handler
+  /** @param {KeyboardEvent} e */
+  const onkeyup = (e) => {
+    // console.log(e);
+    switch (e.key) {
+      case "ArrowUp":
+        network.sendEvent({ type: "move", payload: 0 });
+        break;
+      case "ArrowDown":
+        network.sendEvent({ type: "move", payload: 0 });
+        break;
+      case "ArrowLeft":
+        network.sendEvent({ type: "turn", payload: 0 });
+        break;
+      case "ArrowRight":
+        network.sendEvent({ type: "turn", payload: 0 });
+        break;
+      case " ":
+        network.sendEvent({ type: "fire", payload: false });
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+  return { onframe, onkeydown, onkeyup };
 }
 
-// keydown handler
-/** @param {KeyboardEvent} e */
-function keydownHandler(e) {
-  // console.log(e);
-  switch (e.key) {
-    case "ArrowUp":
-      sendEvent({ type: "move", payload: 1 });
-      break;
-    case "ArrowDown":
-      sendEvent({ type: "move", payload: -1 });
-      break;
-    case "ArrowLeft":
-      sendEvent({ type: "turn", payload: -1 });
-      break;
-    case "ArrowRight":
-      sendEvent({ type: "turn", payload: 1 });
-      break;
-    case " ":
-      sendEvent({ type: "fire", payload: true });
-      break;
-  }
-}
-
-// keyup handler
-/** @param {KeyboardEvent} e */
-function keyupHandler(e) {
-  // console.log(e);
-  switch (e.key) {
-    case "ArrowUp":
-      sendEvent({ type: "move", payload: 0 });
-      break;
-    case "ArrowDown":
-      sendEvent({ type: "move", payload: 0 });
-      break;
-    case "ArrowLeft":
-      sendEvent({ type: "turn", payload: 0 });
-      break;
-    case "ArrowRight":
-      sendEvent({ type: "turn", payload: 0 });
-      break;
-    case " ":
-      sendEvent({ type: "fire", payload: false });
-      break;
-  }
-}
-
-// add event listeners
-window.addEventListener("keydown", keydownHandler);
-window.addEventListener("keyup", keyupHandler);
-
-class GameState {
+export class GameState {
   constructor() {
     /** @type {{ [id: string]: Tank }} */
     this.tanks = {};
@@ -141,9 +153,7 @@ class GameState {
     this.bullets = [];
   }
 
-  /**
-   * @param {string} id
-   */
+  /** @param {string} id */
   addTank(id) {
     // create a tank object
     /** @type {Tank} */
@@ -161,9 +171,12 @@ class GameState {
     this.tanks[id] = tank;
   }
 
-  /**
-    * @param {Tank} tank
-    */
+  /** @param {string} id */
+  removeTank(id) {
+    delete this.tanks[id];
+  }
+
+  /** @param {Tank} tank */
   fireBullet(tank) {
     this.bullets.push({
       firingTankId: tank.id,
@@ -175,9 +188,9 @@ class GameState {
   }
 
   /**
-    * @param {Tank} tank
-    * @param {number} dt - The time delta.
-    */
+   * @param {Tank} tank
+   * @param {number} dt - The time delta.
+   */
   updateTank(tank, dt) {
     // update the tank
     tank.rotation += tank.turning * 5 * dt;
@@ -197,28 +210,25 @@ class GameState {
   }
 
   /**
-    * @param {Bullet} bullet
-    * @param {number} dt - The time delta.
-    */
+   * @param {Bullet} bullet
+   * @param {number} dt - The time delta.
+   */
   updateBullet(bullet, dt) {
     // update the bullet
-     bullet.x += bullet.dx * dt;
-     bullet.y += bullet.dy * dt;
+    bullet.x += bullet.dx * 100 * dt;
+    bullet.y += bullet.dy * 100 * dt;
   }
 
-  /**
-    * @param {number} dt
-    */
+  /** @param {number} dt */
   update(dt) {
     for (const tank of Object.values(this.tanks)) {
       this.updateTank(tank, dt);
-    };
+    }
     for (const bullet of this.bullets) {
       this.updateBullet(bullet, dt);
     }
   }
 }
-
 
 /**
  * @param {Tank} tank
@@ -262,7 +272,7 @@ function drawBullet(bullet, ctx) {
  */
 function draw(state, ctx) {
   // clear the canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   //draw the tanks
   for (const tank of Object.values(state.tanks)) {
@@ -274,22 +284,3 @@ function draw(state, ctx) {
     drawBullet(bullet, ctx);
   }
 }
-
-let lastTime = 0;
-
-/** @param {number} time */
-function draw(time) {
-  if (lastTime == 0) {
-    lastTime = time;
-  }
-  let dt = (time - lastTime) / 1000;
-  lastTime = time;
-
-
-
-  // call draw again on the next frame
-  requestAnimationFrame(draw);
-}
-
-// start drawing
-requestAnimationFrame(draw);

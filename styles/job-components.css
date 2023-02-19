@@ -47,7 +47,18 @@ button {
 
 .row-flex {
   display: flex;
-  flex-flow: row nowrap;
+  flex-flow: row wrap;
+}
+
+    /* padding: 0.5em; */
+/* 
+.row-flex>* {
+  flex: 1;
+} */
+
+.col-flex {
+  display: flex;
+  flex-flow: column wrap;
 }
 
 .row-flex-wrap {
@@ -55,10 +66,6 @@ button {
   flex-flow: row wrap;
 }
 
-.row-flex > * {
-  /* padding: 0.5em; */
-  flex: 1;
-}
 
 /* .row-flex-wrap > * {
   padding: 0.5em;
@@ -152,6 +159,7 @@ button {
   flex-flow: column nowrap;
   /* flex-wrap: wrap; */
   justify-content: center;
+  width: 30ch;
 }
 
 .box > .box-header {
