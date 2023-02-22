@@ -1,13 +1,18 @@
 // TODO fix dumb name
-export class CanvasWrapper extends HTMLCanvasElement {
+
+export class CanvasWrapper extends HTMLElement {
   constructor() {
     super();
     this.handle = undefined;
+    this.canvas = document.createElement("canvas");
     this.resizeObserver = new ResizeObserver((_entries) => {
-      this.width = this.clientWidth;
-      this.height = this.clientHeight;
+      this.canvas.width = this.clientWidth;
+      this.canvas.height = this.clientHeight;
     });
+
+    this.attachShadow({ mode: "open" }).appendChild(this.canvas);
   }
+
   connectedCallback() {
     this.tabIndex = 0;
     this.focus();
@@ -22,6 +27,7 @@ export class CanvasWrapper extends HTMLCanvasElement {
     };
     this.handle = requestAnimationFrame(render);
   }
+
   disconnectedCallback() {
     this.resizeObserver.disconnect();
     if (this.handle) {
@@ -30,4 +36,4 @@ export class CanvasWrapper extends HTMLCanvasElement {
   }
 }
 
-customElements.define("canvas-wrapper", CanvasWrapper, { extends: "canvas" });
+customElements.define("canvas-wrapper", CanvasWrapper);

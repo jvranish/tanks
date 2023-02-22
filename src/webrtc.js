@@ -203,10 +203,11 @@ export const startOffer = async ({
   const offer = /** @type {RTCSessionDescription} */ (
     connection.localDescription
   );
+  console.log("offer", offer);
 
   /** @param {RTCSessionDescription} answer; */
   const acceptAnswer = async (answer) => {
-    await connection.setRemoteDescription(answer);
+    await connection.setRemoteDescription(new RTCSessionDescription(answer));
     return Promise.race([
       channel,
       connectionTimeout(name, timeout),
@@ -235,7 +236,7 @@ export const answerOffer = async (
     iceServers,
   });
 
-  await connection.setRemoteDescription(offer);
+  await connection.setRemoteDescription(new RTCSessionDescription(offer));
 
   const answerInit = await connection.createAnswer();
   await connection.setLocalDescription(answerInit);
@@ -243,6 +244,7 @@ export const answerOffer = async (
   const answer = /** @type {RTCSessionDescription} */ (
     connection.localDescription
   );
+  console.log("answer", answer);
 
   const waitForChannel = async () => {
     const dataChannel = await waitForDataChannel(connection);

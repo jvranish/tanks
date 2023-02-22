@@ -201,9 +201,6 @@ export class EventChunker {
     for (; t <= simTime; t += this.timeChunkMs) {
       const peerEvents = shiftWhile(this.msgQueue, (msg) => msg.simTime <= t);
       // We use the time at the _end_ of the chunk, rather than the beginning.
-      if (peerEvents.length > 0) {
-        console.log("pushing chunk", t);
-      }
       this.eventChunkQueue.push({
         simTime: t,
         dt: this.timeChunkMs,
@@ -211,7 +208,6 @@ export class EventChunker {
       });
       this.simTime = t;
     }
-    console.log("chunk queue length: ", this.eventChunkQueue.length);
   }
 
   /** @param {PeerMessage<E>} msg */
@@ -226,30 +222,60 @@ export class EventChunker {
     }
     const dt = time - this.deltaReference;
     this.deltaReference = time;
+    // console.log("dt", dt);
+    // if (dt > 15) {
+    // console.log("Warning: dt", dt);
+    // }
 
+    const fullQueueSize = this.tickPeriodMs / this.timeChunkMs;
     // if we're too far behind, advance time to the next chunk immediately
     const maxChunksBehind = 3;
-    if (this.eventChunkQueue.length > maxChunksBehind) {
-      const events = this.eventChunkQueue.shift();
-      if (events) {
-        this.localTime = events.simTime;
-        return events;
+    if (this.eventChunkQueue.length > fullQueueSize + maxChunksBehind) {
+      /**
+       * @type {{
+       *   simTime: number;
+       *   dt: number;
+       *   peerEvents: PeerMessage<E>[];
+       * }[]}
+       */
+      const chunks = [];
+      while (this.eventChunkQueue.length > fullQueueSize) {
+        const event = this.eventChunkQueue.shift();
+        if (event) {
+          this.localTime = event.simTime;
+          chunks.push(event);
+        }
       }
+      return chunks;
     }
 
     if (this.eventChunkQueue.length > 0) {
+      /**
+       * @type {{
+       *   simTime: number;
+       *   dt: number;
+       *   peerEvents: PeerMessage<E>[];
+       * }[]}
+       */
+      let chunks = [];
       // Don't advance time if we have no chunks in the queue (we should normally
       // have _some_ chunks even if they are empty, and if not, we need to slow
       // down time)
       this.localTime += dt;
-      if (this.localTime >= this.eventChunkQueue[0].simTime) {
-        // if we've advanced past the next chunk, return it
-        const events = this.eventChunkQueue.shift();
-        if (events?.peerEvents && events.peerEvents.length > 0) {
-          console.log("popping chunk", events.simTime);
+      while (
+        this.eventChunkQueue.length > 0 &&
+        this.localTime >= this.eventChunkQueue[0].simTime
+      ) {
+        const chunk = this.eventChunkQueue.shift();
+        if (chunk) {
+          chunks.push(chunk);
         }
-        return events;
       }
+      if (chunks.length > 2) {
+        console.log("chunks", chunks.length);
+        console.log("dt", dt);
+      }
+      return chunks;
     }
     return undefined;
   }
@@ -373,7 +399,6 @@ export class Server extends EventChunker {
    * @param {E} peerEvent
    */
   sendEvent(peerEvent) {
-    console.log("sendEvent", peerEvent);
     this.sendClientEvent(this.clientId, peerEvent);
   }
 

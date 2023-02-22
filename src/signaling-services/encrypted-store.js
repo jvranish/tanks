@@ -20,8 +20,8 @@ import { KVError } from "./error.js";
 
 /** @type {KVStore<{ iv: string; data: string }>[]} */
 export const defaultKvStores = [
-  new LocalKV(),
-  // new Valkeyrie(),
+  // new LocalKV(),
+  new Valkeyrie(),
   // new KeyValueXYZ(),
   // new Dweet(),
   // new SimpleKV(),

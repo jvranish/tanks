@@ -12,6 +12,7 @@
  * @property {number} moving - The moving of the tank.
  */
 
+import { CanvasWrapper } from "./canvas.js";
 import { EventChunker } from "./webrtc-sockets.js";
 
 // jsdoc types for bullets
@@ -48,52 +49,61 @@ import { EventChunker } from "./webrtc-sockets.js";
  * @param {EventChunker<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
+
   /** @param {CustomEvent} e */
   const onframe = (e) => {
-    const canvas = e.target;
-    if (!(canvas instanceof HTMLCanvasElement)) {
-      throw new Error("not a canvas");
+    const { time } = e.detail;
+    if (!(e.target instanceof CanvasWrapper)) {
+      throw new Error("not a canvas wrapper");
     }
+    const canvas = e.target?.canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       throw new Error("no context");
     }
-    const { time } = e.detail;
-    const events = network.getEvents(time);
-    if (events) {
-      const { peerEvents, dt } = events;
-      for (const event of peerEvents) {
-        console.log("Peer Event: ", event);
-        switch (event.type) {
-          case "peerJoined":
-            state.addTank(event.clientId);
-            break;
-          case "peerLeft":
-            state.removeTank(event.clientId);
-            break;
-          case "peerEvent":
-            switch (event.peerEvent.type) {
-              case "move":
-                state.tanks[event.clientId].moving = event.peerEvent.payload;
-                break;
-              case "turn":
-                state.tanks[event.clientId].turning = event.peerEvent.payload;
-                break;
-              case "fire":
-                state.tanks[event.clientId].isFiring = event.peerEvent.payload;
-                break;
-            }
-            break;
+
+    const chunks = network.getEvents(time);
+    if (chunks) {
+      for (const events of chunks) {
+        const { peerEvents, dt } = events;
+        for (const event of peerEvents) {
+          switch (event.type) {
+            case "peerJoined":
+              state.addTank(event.clientId);
+              break;
+            case "peerLeft":
+              state.removeTank(event.clientId);
+              break;
+            case "peerEvent":
+              switch (event.peerEvent.type) {
+                // TODO break out the moving and turning payloads into individual fields
+                case "move":
+                  state.tanks[event.clientId].moving += event.peerEvent.payload;
+                  break;
+                case "turn":
+                  state.tanks[event.clientId].turning +=
+                    event.peerEvent.payload;
+                  break;
+                case "fire":
+                  state.tanks[event.clientId].isFiring =
+                    event.peerEvent.payload;
+                  break;
+              }
+              break;
+          }
         }
+        state.update(dt / 1000);
       }
-      state.update(dt / 1000);
       draw(state, ctx);
-      // console.log(simTime, peerEvents);
     }
   };
   // keydown handler
   /** @param {KeyboardEvent} e */
   const onkeydown = (e) => {
+    // not a key repeat:
+    if (e.repeat) {
+      return;
+    }
     // console.log(e);
     switch (e.key) {
       case "ArrowUp":
@@ -123,16 +133,16 @@ export function TankGameHandlers(state, network) {
     // console.log(e);
     switch (e.key) {
       case "ArrowUp":
-        network.sendEvent({ type: "move", payload: 0 });
+        network.sendEvent({ type: "move", payload: -1 });
         break;
       case "ArrowDown":
-        network.sendEvent({ type: "move", payload: 0 });
+        network.sendEvent({ type: "move", payload: 1 });
         break;
       case "ArrowLeft":
-        network.sendEvent({ type: "turn", payload: 0 });
+        network.sendEvent({ type: "turn", payload: 1 });
         break;
       case "ArrowRight":
-        network.sendEvent({ type: "turn", payload: 0 });
+        network.sendEvent({ type: "turn", payload: -1 });
         break;
       case " ":
         network.sendEvent({ type: "fire", payload: false });
@@ -151,6 +161,8 @@ export class GameState {
     this.tanks = {};
     /** @type {Bullet[]} */
     this.bullets = [];
+    /** @type {{ [id: string]: number }} */
+    this.scores = {};
   }
 
   /** @param {string} id */
@@ -169,11 +181,49 @@ export class GameState {
       moving: 0, // -1 for backward, 1 for forward
     };
     this.tanks[id] = tank;
+    if (!this.scores[id]) {
+      this.scores[id] = 0;
+    }
   }
 
   /** @param {string} id */
   removeTank(id) {
     delete this.tanks[id];
+  }
+
+  // determine if a tank is colliding with a bullet
+
+  /**
+   * @param {Tank} tank
+   * @param {Bullet} bullet
+   */
+  tankHit(tank, bullet) {
+    // if the bullet is not fired by the tank
+    if (bullet.firingTankId !== tank.id) {
+      // if the bullet is within the tank
+      if (
+        bullet.x > tank.x - 20 &&
+        bullet.x < tank.x + 20 &&
+        bullet.y > tank.y - 20 &&
+        bullet.y < tank.y + 20
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @param {Tank} tank
+   * @param {Tank} killedBy
+   */
+  killTank(tank, killedBy) {
+    // remove the tank
+    this.removeTank(tank.id);
+    // add a new tank
+    this.addTank(tank.id);
+    // increment the score of the killer
+    this.scores[killedBy.id] += 1;
   }
 
   /** @param {Tank} tank */
@@ -188,6 +238,13 @@ export class GameState {
   }
 
   /**
+   * @param {Bullet} bullet
+   */
+  removeBullet(bullet) {
+    this.bullets.splice(this.bullets.indexOf(bullet), 1);
+  }
+
+  /**
    * @param {Tank} tank
    * @param {number} dt - The time delta.
    */
@@ -196,6 +253,16 @@ export class GameState {
     tank.rotation += tank.turning * 5 * dt;
     tank.x += tank.moving * Math.cos(tank.rotation) * 100 * dt;
     tank.y += tank.moving * Math.sin(tank.rotation) * 100 * dt;
+
+    // check if the tank is hit by a bullet
+    for (const bullet of this.bullets) {
+      if (this.tankHit(tank, bullet)) {
+        // remove the bullet
+        this.removeBullet(bullet);
+        // kill the tank
+        this.killTank(tank, this.tanks[bullet.firingTankId]);
+      }
+    }
 
     // fire a bullet
     if (tank.isFiring && tank.fireCooldown <= 0) {
@@ -273,7 +340,10 @@ function drawBullet(bullet, ctx) {
 function draw(state, ctx) {
   // clear the canvas
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  // ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+  // console.log("width, and height", ctx.canvas.width, ctx.canvas.height);
+  // console.log("style width and height", ctx.canvas.style.width, ctx.canvas.style.height);
   //draw the tanks
   for (const tank of Object.values(state.tanks)) {
     drawTank(tank, ctx);
@@ -282,5 +352,14 @@ function draw(state, ctx) {
   //draw the bullets
   for (const bullet of state.bullets) {
     drawBullet(bullet, ctx);
+  }
+
+  // draw the scores
+  ctx.font = "30px Arial";
+  ctx.fillStyle = "black";
+  let i = 0;
+  for (const [id, score] of Object.entries(state.scores)) {
+    ctx.fillText(`${id}: ${score}`, 10, 30 + i * 30);
+    i++;
   }
 }

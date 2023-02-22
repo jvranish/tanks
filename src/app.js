@@ -93,35 +93,6 @@ const dispatch = mini(
 const url = new URL(document.URL);
 const hash = decodeURIComponent(url.hash.slice(1));
 
-// TODO:
-//  maybe getGameState()
-//  getEvents()
-//  sendEvent()
-// todo put object with these callbacks into the state? Also need to handle initial state...
-//
-
-// if (hash !== "") {
-//   Client.connect(hash)
-//     .then(({ client, clientId, state }) => {})
-//     .finally(() => {
-//       dispatch((state) => {
-//         state.connectionState = { state: "disconnected" };
-//       });
-//     });
-// } else {
-//   Server.start().then(({ token, server }) => {
-//     url.hash = token;
-//     history.replaceState(null, "", url.toString());
-//   });
-// }
-
-// /** @param {Event} event */
-// const StartHost = (event) => {
-//   dispatch((state) => {
-//     state.host();
-//   });
-// };
-
 /** @param {(event: Event, state: State) => void} f */
 function eventHandler(f) {
   return (/** @type {Event} */ event) =>
@@ -153,18 +124,6 @@ let gameState = new GameState();
 function getGameState() {
   return gameState;
 }
-
-// let server = null;
-// Server.init({getState: () => gameState}).then(({ token, start }) => {
-//   // url.hash = token;
-//   // history.replaceState(null, "", url.toString());
-//   start().then(({ server: s }) => {
-//     console.log("server started");
-//     server = s;
-//   });
-// });
-
-// const getServer = () => server;
 
 // TODO make an async event handler should set a state, then wait for the async
 //  event to finish then update the state again, (either with success, or an
@@ -260,29 +219,13 @@ const UpdateJoinToken = eventHandler((event, state) => {
   }
 });
 
-function Connecting() {
-  return html`
-    <main>
-      <center>
-        <h2>Tanks!</h2>
-        <section>
-          <div>Connecting to game...</div>
-          <div class="spinner"></div>
-          <button>Cancel</button>
-        </section>
-      </center>
-    </main>
-  `;
-}
 
 /** @param {{ network: EventChunker<TankAction> }} props */
 function InGame({ network }) {
   return html`
-    <canvas
-      is="canvas-wrapper"
-      id="canvas"
+    <canvas-wrapper
       ${TankGameHandlers(gameState, network)}
-    ></canvas>
+    ></canvas-wrapper>
   `;
 }
 
@@ -375,7 +318,7 @@ function MenuError({ back, errorMessage }) {
 function MenuWait({ back, msg }) {
   return html`<div>
     <a onclick=${back}>${"<Back"}</a>
-    <h3>Waiting for Server to Start</h3>
+    <h3>${msg}</h3>
     <div style=${{ display: "flex", flexFlow: "row", gap: "1em" }}>
       <div class="spinner"></div>
     </div>
