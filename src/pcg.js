@@ -1,3 +1,14 @@
+// All the existing JavaScript PCG32 implementations that I could find were
+// either:
+// 1. Broken
+// 2. Had a bunch of unnecessary dependencies
+// 3. Or excessively complicated
+//
+// So I made my own. The implementation is based on the C implementation from
+//    https://www.pcg-random.org/ and uses BigInts to avoid any issues with
+//    64-bit unsigned integers. It also uses JSDoc comments that fully specify
+//    the TypeScript types
+
 export const MAX_UINT64 = 2n ** 64n;
 
 export function randomUInt64() {
@@ -41,6 +52,7 @@ export class PCG32 {
     this.next();
   }
 
+  /** Returns a uniformly distributed random integer between 0 and 2^32 - 1 */
   next() {
     const oldState = this.state;
     this.state = (oldState * 6364136223846793005n + this.inc) % MAX_UINT64;
@@ -81,11 +93,18 @@ export class PCG32 {
   }
 
   /**
-   * Generates a random integer in the range [0, bound)
+   * Returns a uniformly distributed random integer in the range [0, bound).
    *
-   * @param {number} bound generated value will be less than this number
+   * @param {number} bound Generated value will be less than this number (must
+   * be positive, and not greater than 2^32)
    */
   randomBound(bound) {
+    if (bound <= 0) {
+      throw new Error("Bound must be positive");
+    }
+    if (bound > 2 ** 32) {
+      throw new Error("Bound must not be greater than 2^32");
+    }
     // To avoid bias, we need to make the range of the RNG a multiple of
     // bound, which we do by dropping output less than a threshold.
 
