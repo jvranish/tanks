@@ -4,6 +4,7 @@ import { mini } from "../lib/mini.js";
 import { Server, Client, EventChunker } from "./webrtc-sockets.js";
 import { GameState, TankGameHandlers } from "./tank.js";
 import { CanvasWrapper } from "./canvas.js";
+import { PCG32 } from "./pcg.js";
 
 const html = parse({ h, text });
 
@@ -191,6 +192,7 @@ const ConnectToGame = eventHandler((event, state) => {
         console.log(s);
         requestAnimationFrame(() => {
           gameState = Object.setPrototypeOf(s, GameState.prototype);
+          Object.setPrototypeOf(gameState.rng, PCG32.prototype);
           dispatch((state) => {
             state.connected(client);
           });

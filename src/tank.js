@@ -13,6 +13,7 @@
  */
 
 import { CanvasWrapper } from "./canvas.js";
+import { PCG32 } from "./pcg.js";
 import { EventChunker } from "./webrtc-sockets.js";
 
 // jsdoc types for bullets
@@ -25,31 +26,13 @@ import { EventChunker } from "./webrtc-sockets.js";
  * @property {number} dy - The y coordinate of the bullet.
  */
 
-// jsdoc types for actions (breaking out the different types of actions)
-/**
- * @typedef {Object} MoveAction
- * @property {"move"} type - The type of action.
- * @property {number} payload - The payload of the action.
- */
-/**
- * @typedef {Object} TurnAction
- * @property {"turn"} type - The type of action.
- * @property {number} payload - The payload of the action.
- */
-/**
- * @typedef {Object} FireAction
- * @property {"fire"} type - The type of action.
- * @property {boolean} payload - The payload of the action.
- */
-
-/** @typedef {MoveAction | TurnAction | FireAction} TankAction */
+/** @typedef {{ move: number; turn: number; fire: boolean }} TankAction */
 
 /**
  * @param {GameState} state
  * @param {EventChunker<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
-
   /** @param {CustomEvent} e */
   const onframe = (e) => {
     const { time } = e.detail;
@@ -75,20 +58,9 @@ export function TankGameHandlers(state, network) {
               state.removeTank(event.clientId);
               break;
             case "peerEvent":
-              switch (event.peerEvent.type) {
-                // TODO break out the moving and turning payloads into individual fields
-                case "move":
-                  state.tanks[event.clientId].moving += event.peerEvent.payload;
-                  break;
-                case "turn":
-                  state.tanks[event.clientId].turning +=
-                    event.peerEvent.payload;
-                  break;
-                case "fire":
-                  state.tanks[event.clientId].isFiring =
-                    event.peerEvent.payload;
-                  break;
-              }
+              state.tanks[event.clientId].moving = event.peerEvent.move;
+              state.tanks[event.clientId].turning = event.peerEvent.turn;
+              state.tanks[event.clientId].isFiring = event.peerEvent.fire;
               break;
           }
         }
@@ -97,6 +69,11 @@ export function TankGameHandlers(state, network) {
       draw(state, ctx);
     }
   };
+
+  /** @typedef {Map<KeyboardEvent["key"], boolean>} KeyStates */
+  /** @type {KeyStates} */
+  const keyStates = new Map();
+
   // keydown handler
   /** @param {KeyboardEvent} e */
   const onkeydown = (e) => {
@@ -104,27 +81,43 @@ export function TankGameHandlers(state, network) {
     if (e.repeat) {
       return;
     }
+
     // console.log(e);
     switch (e.key) {
       case "ArrowUp":
-        network.sendEvent({ type: "move", payload: 1 });
-        break;
       case "ArrowDown":
-        network.sendEvent({ type: "move", payload: -1 });
-        break;
       case "ArrowLeft":
-        network.sendEvent({ type: "turn", payload: -1 });
-        break;
       case "ArrowRight":
-        network.sendEvent({ type: "turn", payload: 1 });
-        break;
       case " ":
-        network.sendEvent({ type: "fire", payload: true });
+        keyStates.set(e.key, true);
         break;
       default:
         return;
     }
     e.preventDefault();
+    const actions = {
+      move: 0,
+      turn: 0,
+      fire: false,
+    };
+
+    if (keyStates.get("ArrowUp")) {
+      actions.move += 1;
+    }
+    if (keyStates.get("ArrowDown")) {
+      actions.move -= 1;
+    }
+    if (keyStates.get("ArrowLeft")) {
+      actions.turn -= 1;
+    }
+    if (keyStates.get("ArrowRight")) {
+      actions.turn += 1;
+    }
+    if (keyStates.get(" ")) {
+      actions.fire = true;
+    }
+
+    network.sendEvent(actions);
   };
 
   // keyup handler
@@ -133,24 +126,41 @@ export function TankGameHandlers(state, network) {
     // console.log(e);
     switch (e.key) {
       case "ArrowUp":
-        network.sendEvent({ type: "move", payload: -1 });
-        break;
       case "ArrowDown":
-        network.sendEvent({ type: "move", payload: 1 });
-        break;
       case "ArrowLeft":
-        network.sendEvent({ type: "turn", payload: 1 });
-        break;
       case "ArrowRight":
-        network.sendEvent({ type: "turn", payload: -1 });
-        break;
       case " ":
-        network.sendEvent({ type: "fire", payload: false });
+        keyStates.set(e.key, false);
         break;
       default:
         return;
     }
     e.preventDefault();
+
+    const actions = {
+      move: 0,
+      turn: 0,
+      fire: false,
+    };
+
+    if (keyStates.get("ArrowUp")) {
+      actions.move += 1;
+    }
+    if (keyStates.get("ArrowDown")) {
+      actions.move -= 1;
+    }
+    if (keyStates.get("ArrowLeft")) {
+      actions.turn += 1;
+    }
+    if (keyStates.get("ArrowRight")) {
+      actions.turn -= 1;
+    }
+    if (keyStates.get(" ")) {
+      actions.fire = true;
+    }
+
+    network.sendEvent(actions);
+
   };
   return { onframe, onkeydown, onkeyup };
 }
@@ -163,6 +173,7 @@ export class GameState {
     this.bullets = [];
     /** @type {{ [id: string]: number }} */
     this.scores = {};
+    this.rng = new PCG32();
   }
 
   /** @param {string} id */
@@ -171,8 +182,8 @@ export class GameState {
     /** @type {Tank} */
     const tank = {
       id,
-      x: 200,
-      y: 200,
+      x: this.rng.randomInt(50, 450),
+      y: this.rng.randomInt(50, 450),
       color: "red",
       rotation: 0,
       isFiring: false,
@@ -237,9 +248,7 @@ export class GameState {
     });
   }
 
-  /**
-   * @param {Bullet} bullet
-   */
+  /** @param {Bullet} bullet */
   removeBullet(bullet) {
     this.bullets.splice(this.bullets.indexOf(bullet), 1);
   }
