@@ -170,4 +170,22 @@ export class PCG32 {
   choose(array) {
     return array[this.randomBound(array.length)];
   }
+
+  toJSON() {
+    // JSON.stringify won't serialize the BigInts, so we convert them to strings
+    return {
+      state: this.state.toString(),
+      inc: this.inc.toString(),
+    };
+  }
+
+  /** @param {{ state: string; inc: string; }} json */
+  static fromJSON(json) {
+    const rng = {
+      state: BigInt(json.state),
+      inc: BigInt(json.inc)
+    };
+    Object.setPrototypeOf(rng, PCG32.prototype);
+    return rng;
+  }
 }

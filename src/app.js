@@ -191,8 +191,8 @@ const ConnectToGame = eventHandler((event, state) => {
       .then(({ client, clientId, state: s }) => {
         console.log(s);
         requestAnimationFrame(() => {
+          s.rng = PCG32.fromJSON(s.rng);
           gameState = Object.setPrototypeOf(s, GameState.prototype);
-          Object.setPrototypeOf(gameState.rng, PCG32.prototype);
           dispatch((state) => {
             state.connected(client);
           });

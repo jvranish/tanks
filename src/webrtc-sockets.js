@@ -271,7 +271,7 @@ export class EventChunker {
           chunks.push(chunk);
         }
       }
-      if (chunks.length > 2) {
+      if (chunks.length > 5) {
         console.log("chunks", chunks.length);
         console.log("dt", dt);
       }
