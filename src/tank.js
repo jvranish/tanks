@@ -16,6 +16,17 @@ import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
 import { EventChunker } from "./webrtc-sockets.js";
 
+/** @param {string} str */
+function fletcher32(str) {
+  let sum1 = 0xffff,
+    sum2 = 0xffff;
+  for (let i = 0; i < str.length; i++) {
+    sum1 = (sum1 + str.charCodeAt(i)) % 0xffff;
+    sum2 = (sum2 + sum1) % 0xffff;
+  }
+  return (sum2 << 16) | sum1;
+}
+
 // jsdoc types for bullets
 /**
  * @typedef {Object} Bullet
@@ -33,6 +44,7 @@ import { EventChunker } from "./webrtc-sockets.js";
  * @param {EventChunker<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
+  let lastSimTime = 0;
   /** @param {CustomEvent} e */
   const onframe = (e) => {
     const { time } = e.detail;
@@ -48,7 +60,7 @@ export function TankGameHandlers(state, network) {
     const chunks = network.getEvents(time);
     if (chunks) {
       for (const events of chunks) {
-        const { peerEvents, dt } = events;
+        const { peerEvents, dt, simTime } = events;
         for (const event of peerEvents) {
           switch (event.type) {
             case "peerJoined":
@@ -65,6 +77,14 @@ export function TankGameHandlers(state, network) {
           }
         }
         state.update(dt / 1000);
+        // every 10 seconds of sim time, print out the state
+        if (simTime > lastSimTime + 10000) {
+          console.log("state at sim time", simTime, lastSimTime);
+          // round to the nearest 10 seconds
+          lastSimTime = Math.round(simTime / 10000) * 10000;
+          console.log(state);
+          console.log("state hash", fletcher32(JSON.stringify(state)));
+        }
       }
       draw(state, ctx);
     }
@@ -150,17 +170,16 @@ export function TankGameHandlers(state, network) {
       actions.move -= 1;
     }
     if (keyStates.get("ArrowLeft")) {
-      actions.turn += 1;
+      actions.turn -= 1;
     }
     if (keyStates.get("ArrowRight")) {
-      actions.turn -= 1;
+      actions.turn += 1;
     }
     if (keyStates.get(" ")) {
       actions.fire = true;
     }
 
     network.sendEvent(actions);
-
   };
   return { onframe, onkeydown, onkeyup };
 }
@@ -293,6 +312,15 @@ export class GameState {
     // update the bullet
     bullet.x += bullet.dx * 100 * dt;
     bullet.y += bullet.dy * 100 * dt;
+    // if bullet is 8000 pixels away from the firing tank, remove it
+    const tank = this.tanks[bullet.firingTankId];
+    if (
+      Math.abs(tank.x - bullet.x) > 8000 ||
+      Math.abs(tank.y - bullet.y) > 8000
+    ) {
+      this.removeBullet(bullet);
+    }
+
   }
 
   /** @param {number} dt */
