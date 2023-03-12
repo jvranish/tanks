@@ -82,6 +82,7 @@ const waitForConnectionFailed = (connection) =>
  */
 const waitIceComplete = (connection) =>
   waitForEvent(connection, "icegatheringstatechange", (source, event, done) => {
+    console.log("icegatheringstatechange", source.iceGatheringState, event);
     if (source.iceGatheringState === "complete") {
       done();
     }
@@ -106,9 +107,6 @@ const iceFailed = async (name, connection) => {
 };
 
 const defaultIceServers = [
-  {
-    urls: "stun:stun.stunprotocol.org",
-  },
   {
     urls: "stun:stun.wtfismyip.com",
   },
@@ -137,6 +135,9 @@ export class Channel {
       delete this.connection;
       this.onData(null);
     };
+    window.addEventListener("beforeunload", () => {
+      this.close();
+    });
   }
 
   /**
@@ -199,7 +200,9 @@ export const startOffer = async ({
 
   const offerInit = await connection.createOffer();
   await connection.setLocalDescription(offerInit);
+  console.log("set local description");
   await waitIceComplete(connection);
+  console.log("ICE complete");
   const offer = /** @type {RTCSessionDescription} */ (
     connection.localDescription
   );

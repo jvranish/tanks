@@ -436,6 +436,7 @@ export class Server extends EventChunker {
     this.clients[clientId] = channel;
     channel.onData = (msg) => {
       if (msg === null) {
+        console.log("client disconnected", clientId);
         this.onDisconnect(clientId);
       } else {
         // TODO handle parse failure here (and other places)
