@@ -138,6 +138,7 @@ onTick(events?) onJoin onLeft onEvent
  * @template E
  * @typedef {| { type: "peerJoined"; clientId: string; simTime: number }
  *   | { type: "peerLeft"; clientId: string; simTime: number }
+ *   | { type: "disconnected"; simTime: number }
  *   | {
  *       type: "peerEvent";
  *       clientId: string;
@@ -160,20 +161,20 @@ onTick(events?) onJoin onLeft onEvent
  *   | { type: "peerMessage"; msg: PeerMessage<E> }} Message
  */
 
-/**
- * @template E
- * @typedef {Object} ClientCallbacks
- * @property {function(): void} onDisconnect
- */
-
 // TODO come up with a better name for this
 /** @template E */
 export class EventChunker {
-  /** @param {{ simTime: number; tickPeriodMs: number; timeChunkMs: number }} init */
+  /**
+   * @param {{
+   *   simTime: number;
+   *   tickPeriodMs: number;
+   *   timeChunkMs: number;
+   * }} init
+   */
   constructor({ simTime, tickPeriodMs, timeChunkMs }) {
     this.simTime = simTime;
     this.localTime = simTime;
-    this.deltaReference = 0;
+    this.deltaReference = performance.now();
     this.tickPeriodMs = tickPeriodMs;
     this.timeChunkMs = timeChunkMs;
     /**
@@ -186,6 +187,34 @@ export class EventChunker {
     this.eventChunkQueue = [];
     /** @type {PeerMessage<E>[]} */
     this.msgQueue = [];
+
+    /** @type {null | ReturnType<setInterval>} */
+    this.chunkTimer = null;
+  }
+
+  /**
+   * @param {(chunk: {
+   *   dt: number;
+   *   peerEvents: PeerMessage<E>[];
+   *   simTime: number;
+   * }) => void} onChunk
+   */
+  startProcessingEvents(onChunk) {
+    this.onChunk = onChunk;
+    this.chunkTimer = setInterval(() => {
+      const time = performance.now();
+      const dt = time - this.deltaReference;
+      this.deltaReference = time;
+      for (const chunk of this.getEvents(dt)) {
+        onChunk(chunk);
+        if (
+          this.chunkTimer &&
+          chunk.peerEvents.some((msg) => msg.type === "disconnected")
+        ) {
+          clearInterval(this.chunkTimer);
+        }
+      }
+    }, this.timeChunkMs);
   }
 
   /** @param {E} peerEvent */
@@ -215,18 +244,8 @@ export class EventChunker {
     this.msgQueue.push(msg);
   }
 
-  /** @param {number} time */
-  getEvents(time) {
-    if (this.deltaReference === 0) {
-      this.deltaReference = time;
-    }
-    const dt = time - this.deltaReference;
-    this.deltaReference = time;
-    // console.log("dt", dt);
-    // if (dt > 15) {
-    // console.log("Warning: dt", dt);
-    // }
-
+  /** @param {number} dt */
+  getEvents(dt) {
     const fullQueueSize = this.tickPeriodMs / this.timeChunkMs;
     // if we're too far behind, advance time to the next chunk immediately
     const maxChunksBehind = 3;
@@ -277,7 +296,7 @@ export class EventChunker {
       }
       return chunks;
     }
-    return undefined;
+    return [];
   }
 }
 
@@ -295,8 +314,14 @@ export class Client extends EventChunker {
    *   timeChunkMs: number;
    * }} init
    */
-  constructor({ channel, clientId, simTime, tickPeriodMs, timeChunkMs }) {
-    super({ simTime, tickPeriodMs, timeChunkMs });
+  constructor({
+    channel,
+    clientId,
+    simTime,
+    tickPeriodMs,
+    timeChunkMs,
+  }) {
+    super({ simTime, tickPeriodMs, timeChunkMs});
     this.channel = channel;
     this.clientId = clientId;
   }
@@ -310,10 +335,9 @@ export class Client extends EventChunker {
   /**
    * @template S,E
    * @param {string} token
-   * @param {ClientCallbacks<E>} callbacks
    * @returns {Promise<{ client: Client<E>; clientId: string; state: S }>}
    */
-  static async connect(token, callbacks) {
+  static async connect(token) {
     const channel = await connect(token);
     const connectMsg = await new Promise((r) => (channel.onData = r));
     let { clientId, simTime, tickPeriodMs, timeChunkMs, state } =
@@ -329,8 +353,7 @@ export class Client extends EventChunker {
 
     channel.onData = (data) => {
       if (data === null) {
-        // TODO have getEvents return done or something?
-        callbacks.onDisconnect();
+        client.recvMsg({ type: "disconnected", simTime: client.simTime });
       } else {
         /** @type {Message<S, E>} */
         const msg = JSON.parse(data);
@@ -380,7 +403,11 @@ export class Server extends EventChunker {
    * @param {ServerCallbacks<S, E>} callbacks
    */
   constructor(token, stop, callbacks) {
-    super({ simTime: 0, tickPeriodMs: 50, timeChunkMs: 10 });
+    super({
+      simTime: 0,
+      tickPeriodMs: 50,
+      timeChunkMs: 10,
+    });
     /** @type {{ [key: string]: Channel }} */
     this.clients = {};
     this.token = token;
@@ -487,14 +514,14 @@ export class Server extends EventChunker {
    * @param {ServerCallbacks<S, E>} serverCallbacks
    */
   static async init(serverCallbacks) {
-    let { token, start: start_listen } = await listen();
+    let { token, start: startListen } = await listen();
 
     const start = async () => {
       /** @param {Channel} channel */
       const onConnect = (channel) => {
         server.onConnect(channel);
       };
-      let { stop } = await start_listen({ onConnect });
+      let { stop } = await startListen({ onConnect });
       let server = new Server(token, stop, serverCallbacks);
       /** @type {PeerMessage<E>} */
       const joinMsg = {

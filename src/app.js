@@ -2,7 +2,7 @@ import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
 import { Server, Client, EventChunker } from "./webrtc-sockets.js";
-import { GameState, TankGameHandlers } from "./tank.js";
+import { GameState, handleChunks, TankGameHandlers } from "./tank.js";
 import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
 
@@ -160,6 +160,7 @@ const StartGame = eventHandler((event, state) => {
     state.startingHost();
     start()
       .then(({ server }) => {
+        server.startProcessingEvents(handleChunks(gameState));
         requestAnimationFrame(() => {
           dispatch((state) => {
             state.connected(server);
@@ -187,12 +188,11 @@ const ConnectToGame = eventHandler((event, state) => {
   if (state.appState.state === "join") {
     let token = state.appState.token;
     state.joiningGame();
-    Client.connect(token, { onDisconnect: () => {} })
+    Client.connect(token)
       .then(({ client, clientId, state: s }) => {
-        console.log(s);
+        gameState = GameState.fromJSON(s);
+        client.startProcessingEvents(handleChunks(gameState));
         requestAnimationFrame(() => {
-          s.rng = PCG32.fromJSON(s.rng);
-          gameState = Object.setPrototypeOf(s, GameState.prototype);
           dispatch((state) => {
             state.connected(client);
           });

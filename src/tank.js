@@ -39,12 +39,36 @@ function fletcher32(str) {
 
 /** @typedef {{ move: number; turn: number; fire: boolean }} TankAction */
 
+/** @param {GameState} state */
+export function handleChunks(state) {
+  let lastSimTime = 0;
+  /**
+   * @param {{
+   *   simTime: number;
+   *   dt: number;
+   *   peerEvents: import("./webrtc-sockets.js").PeerMessage<TankAction>[];
+   * }} chunk
+   */
+  return (chunk) => {
+    const { simTime } = chunk;
+    state.processChunk(chunk);
+    // every 10 seconds of sim time, print out the state
+    if (simTime > lastSimTime + 10000) {
+      console.log("state at sim time", simTime, lastSimTime);
+      // round to the nearest 10 seconds
+      lastSimTime = Math.round(simTime / 10000) * 10000;
+      console.log(state);
+      console.log("state hash", fletcher32(JSON.stringify(state)));
+    }
+  };
+}
+
+
 /**
  * @param {GameState} state
  * @param {EventChunker<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
-  let lastSimTime = 0;
   /** @param {CustomEvent} e */
   const onframe = (e) => {
     const { time } = e.detail;
@@ -57,37 +81,7 @@ export function TankGameHandlers(state, network) {
       throw new Error("no context");
     }
 
-    const chunks = network.getEvents(time);
-    if (chunks) {
-      for (const events of chunks) {
-        const { peerEvents, dt, simTime } = events;
-        for (const event of peerEvents) {
-          switch (event.type) {
-            case "peerJoined":
-              state.addTank(event.clientId);
-              break;
-            case "peerLeft":
-              state.removeTank(event.clientId);
-              break;
-            case "peerEvent":
-              state.tanks[event.clientId].moving = event.peerEvent.move;
-              state.tanks[event.clientId].turning = event.peerEvent.turn;
-              state.tanks[event.clientId].isFiring = event.peerEvent.fire;
-              break;
-          }
-        }
-        state.update(dt / 1000);
-        // every 10 seconds of sim time, print out the state
-        if (simTime > lastSimTime + 10000) {
-          console.log("state at sim time", simTime, lastSimTime);
-          // round to the nearest 10 seconds
-          lastSimTime = Math.round(simTime / 10000) * 10000;
-          console.log(state);
-          console.log("state hash", fletcher32(JSON.stringify(state)));
-        }
-      }
-      draw(state, ctx);
-    }
+    draw(state, ctx);
   };
 
   /** @typedef {Map<KeyboardEvent["key"], boolean>} KeyStates */
@@ -320,7 +314,6 @@ export class GameState {
     ) {
       this.removeBullet(bullet);
     }
-
   }
 
   /** @param {number} dt */
@@ -331,6 +324,39 @@ export class GameState {
     for (const bullet of this.bullets) {
       this.updateBullet(bullet, dt);
     }
+  }
+
+  /**
+   * @param {{
+   *   simTime: number;
+   *   dt: number;
+   *   peerEvents: import("./webrtc-sockets.js").PeerMessage<TankAction>[];
+   * }} chunk
+   */
+  processChunk(chunk) {
+    const { peerEvents, dt } = chunk;
+    for (const event of peerEvents) {
+      switch (event.type) {
+        case "peerJoined":
+          this.addTank(event.clientId);
+          break;
+        case "peerLeft":
+          this.removeTank(event.clientId);
+          break;
+        case "peerEvent":
+          this.tanks[event.clientId].moving = event.peerEvent.move;
+          this.tanks[event.clientId].turning = event.peerEvent.turn;
+          this.tanks[event.clientId].isFiring = event.peerEvent.fire;
+          break;
+      }
+    }
+    this.update(dt / 1000);
+  }
+
+  /** @param {any} json */
+  static fromJSON(json) {
+    json.rng = PCG32.fromJSON(json.rng);
+    return Object.setPrototypeOf(json, GameState.prototype);
   }
 }
 
