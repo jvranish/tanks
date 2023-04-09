@@ -13,8 +13,8 @@ const html = parse({ h, text });
 /**
  * @typedef {| { state: "connecting"; token: string }
  *   | { state: "main" }
- *   | { state: "join"; token: string }
- *   | { state: "host-wait" }
+ *   | { state: "join-enter-token"; token: string }
+ *   | { state: "host-wait"}
  *   | {
  *       state: "host";
  *       token: string;
@@ -39,14 +39,15 @@ class State {
     this.appState = { state: "main" };
   }
 
+  // TODO rename this to JoinWait
   /** @param {string} [token] */
-  joinGame(token) {
-    this.appState = { state: "join", token: token ?? "" };
+  joinEnterToken(token) {
+    this.appState = { state: "join-enter-token", token: token ?? "" };
   }
 
   /** @param {string} token */
   updateJoinToken(token) {
-    if (this.appState.state === "join") {
+    if (this.appState.state === "join-enter-token") {
       this.appState.token = token;
     }
   }
@@ -84,7 +85,8 @@ class State {
   }
 }
 
-const dispatch = mini(
+
+const {dispatch, eventHandler} = mini(
   new State(),
   main,
   document.getElementById("root"),
@@ -93,13 +95,30 @@ const dispatch = mini(
 
 const url = new URL(document.URL);
 const hash = decodeURIComponent(url.hash.slice(1));
+if (hash !== "") {
+  dispatch((state) => {
+    state.joinEnterToken(hash);
+  });
+}
 
-/** @param {(event: Event, state: State) => void} f */
-function eventHandler(f) {
-  return (/** @type {Event} */ event) =>
-    dispatch((state) => {
-      f(event, state);
-    });
+
+/**
+ * @param {(event: Event, state: State) => Promise<(state: State) => void>} f
+ */
+function asyncEventHandler(f) {
+  return (/** @type {Event} */ event) => {
+    let oldState = dispatch((state) => {
+      f(event, state).then((f) => {
+        if (state.appState !== oldState) {
+          console.warn(
+            "state changed since event handler ran, but before the async task finished, aborting"
+          );
+        } else {
+          dispatch(f);
+        }
+      });
+    }).appState;
+  };
 }
 
 /**
@@ -112,13 +131,6 @@ export function main(state) {
   } else {
     return Menu(state);
   }
-  // if (state.connectionState.state === "disconnected") {
-  //   return Menu(state);
-  // } else if (state.connectionState.state === "connecting") {
-  //   return Connecting();
-  // } else if (state.connectionState.state === "connected") {
-  //   return InGame();
-  // }
 }
 
 let gameState = new GameState();
@@ -126,86 +138,55 @@ function getGameState() {
   return gameState;
 }
 
-// TODO make an async event handler should set a state, then wait for the async
-//  event to finish then update the state again, (either with success, or an
-//  error), but only if the state hasn't changed (use a unique object as a marker), (we have to use
-//  requestAnimationFrame, because otherwise we'll be in the middle of a render
-//  when we update the state) (do I actually need requestAnimationFrame? or is
-//  dispatch enough?)
-// onSuccess, onError
-
-const StartHostGame = eventHandler((event, state) => {
+/** @param {Event} event */
+const StartHostGame = asyncEventHandler(async (event, state) => {
   state.hostWait();
-  Server.init({ getState: getGameState })
-    .then(({ token, start }) => {
-      requestAnimationFrame(() => {
-        dispatch((state) => {
-          state.hostGame(token, start);
-        });
-      });
-    })
-    .catch((e) => {
-      console.error(e);
-      requestAnimationFrame(() => {
-        dispatch((state) => {
-          state.errorMenu("Failed to initialize server");
-        });
-      });
-    });
+  try {
+    const { token, start } = await Server.init({ getState: getGameState });
+    return (state) => state.hostGame(token, start);
+  } catch (e) {
+    console.error(e);
+    return (state) => state.errorMenu("Failed to initialize server");
+  }
 });
 
-const StartGame = eventHandler((event, state) => {
+
+const StartGame = asyncEventHandler(async (event, state) => {
   if (state.appState.state === "host") {
-    let start = state.appState.start;
+    let { token, start } = state.appState;
     state.startingHost();
-    start()
-      .then(({ server }) => {
-        server.startProcessingEvents(handleChunks(gameState));
-        requestAnimationFrame(() => {
-          dispatch((state) => {
-            state.connected(server);
-          });
-        });
-      })
-      .catch((e) => {
-        console.error(e);
-        requestAnimationFrame(() => {
-          dispatch((state) => {
-            state.errorMenu("Failed to start server");
-          });
-        });
-      });
+    try {
+      const {server} = await start();
+      server.startProcessingEvents(handleChunks(gameState));
+      return (state) => state.connected(server);
+    } catch (e) {
+      console.error(e);
+      return (state) => state.errorMenu("Failed to start server");
+    }
+  } else {
+    throw new Error("Invalid state");
   }
 });
 
 const StartJoinGame = eventHandler((event, state) => {
-  state.joinGame();
+  state.joinEnterToken();
 });
 
-// TODO add pre-condition checks to state machines state updates
-// rename joinGame to joinGameMenu (or something like that)
-const ConnectToGame = eventHandler((event, state) => {
-  if (state.appState.state === "join") {
+const JoinGame = asyncEventHandler(async (event, state) => {
+  if (state.appState.state === "join-enter-token") {
     let token = state.appState.token;
     state.joiningGame();
-    Client.connect(token)
-      .then(({ client, clientId, state: s }) => {
-        gameState = GameState.fromJSON(s);
-        client.startProcessingEvents(handleChunks(gameState));
-        requestAnimationFrame(() => {
-          dispatch((state) => {
-            state.connected(client);
-          });
-        });
-      })
-      .catch((e) => {
-        console.error(e);
-        requestAnimationFrame(() => {
-          dispatch((state) => {
-            state.errorMenu("Failed to connect to server");
-          });
-        });
-      });
+    try {
+      const{ client, clientId, state: s } = await Client.connect(token);
+      gameState = GameState.fromJSON(s);
+      client.startProcessingEvents(handleChunks(gameState));
+      return (state) => state.connected(client);
+    } catch (e) {
+      console.error(e);
+      return (state) => state.errorMenu("Failed to connect to server");
+    } 
+  } else {
+    throw new Error("Invalid state");
   }
 });
 
@@ -214,20 +195,17 @@ const BackToMainMenu = eventHandler((event, state) => {
 });
 
 const UpdateJoinToken = eventHandler((event, state) => {
-  if (state.appState.state === "join") {
+  if (state.appState.state === "join-enter-token") {
     if (event.target instanceof HTMLInputElement) {
       state.appState.token = event.target.value;
     }
   }
 });
 
-
 /** @param {{ network: EventChunker<TankAction> }} props */
 function InGame({ network }) {
   return html`
-    <canvas-wrapper
-      ${TankGameHandlers(gameState, network)}
-    ></canvas-wrapper>
+    <canvas-wrapper ${TankGameHandlers(gameState, network)}></canvas-wrapper>
   `;
 }
 
@@ -264,7 +242,10 @@ function WhichMenu(state) {
   ) {
     return MenuWait({
       back: BackToMainMenu,
-      msg: state.appState.state === "host-wait" ? "Waiting for game to start" : "Starting game...",
+      msg:
+        state.appState.state === "host-wait"
+          ? "Waiting for game to start"
+          : "Starting game...",
     });
   } else if (state.appState.state === "joining-game") {
     return MenuWait({
@@ -277,10 +258,10 @@ function WhichMenu(state) {
       gameCode: state.appState.token,
       startGame: StartGame,
     });
-  } else if (state.appState.state === "join") {
-    return MenuJoinGame({
+  } else if (state.appState.state === "join-enter-token") {
+    return MenuJoinEnterToken({
       back: BackToMainMenu,
-      joinGame: ConnectToGame,
+      joinGame: JoinGame,
       token: state.appState.token,
     });
   } else if (state.appState.state === "error") {
@@ -316,7 +297,7 @@ function MenuError({ back, errorMessage }) {
   </div>`;
 }
 
-/** @param {{ back: () => void, msg: string }} props */
+/** @param {{ back: () => void; msg: string }} props */
 function MenuWait({ back, msg }) {
   return html`<div>
     <a onclick=${back}>${"<Back"}</a>
@@ -357,7 +338,7 @@ function MenuHostGame({ back, startGame, gameCode }) {
 // TODO add a better validate function for tokens (on state)
 // TODO pass in a function to update the token rather than use a global?
 /** @param {{ back: () => void; token: string; joinGame: () => void }} props */
-function MenuJoinGame({ back, token, joinGame }) {
+function MenuJoinEnterToken({ back, token, joinGame }) {
   return html`<div>
     <a onclick=${back}>${"<Back"}</a>
     <h3>HostGame</h3>
