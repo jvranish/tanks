@@ -13,3 +13,11 @@ export class KVError extends Error {
     this.name = "KVError";
   }
 }
+
+export class ETagMismatchError extends Error {
+  /** @param {string} message */
+  constructor(message) {
+    super(message);
+    this.name = "ETagMismatchError";
+  }
+}

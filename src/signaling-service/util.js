@@ -215,6 +215,64 @@ export async function importKeyAES(rawAesKey) {
   ]);
 }
 
+/**
+ * Computes the SHA-256 hash of the first 16 bytes of a CryptoKey and returns it
+ * as a hexadecimal string. This is useful if you want to use the CryptoKey as a
+ * identifier in some semi-public place, without exposing the key itself. Anyone
+ * with the AES key will be able to derive the same key, but nobody with _just_
+ * the derived key will be able to derive the original AES key.
+ *
+ * @param {CryptoKey} key - The CryptoKey to hash.
+ */
+export async function computeKeyHash(key) {
+  const keyData = await crypto.subtle.exportKey("raw", key);
+  const hashBuffer = await crypto.subtle.digest(
+    { name: "SHA-256" },
+    keyData.slice(0, 16)
+  );
+  return bufferToHex(hashBuffer);
+}
+
+
+/**
+ * @template {Record<string, any>} T
+ * @param {T} obj1
+ * @param {T} obj2
+ */
+export function isDeepEqual(obj1, obj2) {
+  if (obj1 === obj2) {
+    return true;
+  }
+
+  if (
+    typeof obj1 !== "object" ||
+    obj1 === null ||
+    typeof obj2 !== "object" ||
+    obj2 === null
+  ) {
+    return false;
+  }
+
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+
+  for (const key of keys1) {
+    if (!keys2.includes(key)) {
+      return false;
+    }
+    if (!isDeepEqual(obj1[key], obj2[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
 
 export async function BasicEncryptionTest() {
   let testObj = { test: "foo"};
