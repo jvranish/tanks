@@ -1,67 +1,96 @@
 // @ts-check
-import { assertEq, barrierMsg } from "./test-helpers.js";
+import { Queue } from "./queue.js";
+import { assertEq, assertPromiseThrows, barrierMsg, describe, it } from "./test-helpers.js";
 import { startOffer, answerOffer } from "./webrtc.js";
 
-export const webRTCTestAnswerIceFail = async () => {
-  const {offer} = await startOffer({ name: "a" });
-  const { waitForConnect} = await answerOffer(offer, { name: "b" });
-  await waitForConnect();
-};
 
-export const webRTCTestOfferTimeout = async () => {
-  const {offer, acceptAnswer} = await startOffer({ name: "a" });
+/**
+ * @param {RTCDataChannel} channel
+ */
+function messageQueue(channel) {
+  /** @type {Queue<string|null>} */
+  const queue = new Queue();
+  channel.addEventListener("message", (event) => {
+    queue.push(event.data);
+  });
+  channel.addEventListener("close", () => {
+    queue.push(null);
+  });
+  return queue;
+}
 
-  const connection = new RTCPeerConnection();
-  connection.setRemoteDescription(offer);
-  const answerInit = await connection.createAnswer();
-  await connection.setLocalDescription(answerInit);
-  const answer = /** @type {RTCSessionDescription} */ (
-    connection.localDescription
-  );
+describe("WebRTC", function () {
+  it("TestAnswerIceFail", async function () {
+    const { offer } = await startOffer({ name: "a" });
+    const { waitForConnect } = await answerOffer(offer, { name: "b" });
+    await assertPromiseThrows(waitForConnect(), (e) => {
+      assertEq(e.message, "Failed ICE negotiation");
+    });
+  });
 
-  // Close answering peer to cause a timeout
-  connection.close();
+  it("webRTCTestOfferTimeout", async function () {
+    const { offer, acceptAnswer } = await startOffer({ name: "a" });
 
-  // This should time out
-  await acceptAnswer(answer);
-  // const socketB = await waitForConnect();
+    const connection = new RTCPeerConnection();
+    connection.setRemoteDescription(offer);
+    const answerInit = await connection.createAnswer();
+    await connection.setLocalDescription(answerInit);
+    const answer = /** @type {RTCSessionDescription} */ (
+      connection.localDescription
+    );
 
-  // await socketA.send("asdf");
-  // const msg = await socketB.recv();
-  // console.log("recv: ", msg);
-};
+    // Close answering peer to cause a timeout
+    connection.close();
+
+    // This should time out
+    await assertPromiseThrows(acceptAnswer(answer), (e) => {
+      assertEq(e.message, "Failed ICE negotiation");
+    });
+    // const socketB = await waitForConnect();
+
+    // await socketA.send("asdf");
+    // const msg = await socketB.recv();
+    // console.log("recv: ", msg);
+  });
+
+  it("should be able to connect", async function () {
+    const { send: sendOffer, recv: recvOffer } = barrierMsg();
+    const { send: sendAnswer, recv: recvAnswer } = barrierMsg();
+
+    const a = async () => {
+      const { offer, acceptAnswer } = await startOffer({ name: "a" });
+      await sendOffer(offer);
+      const answer = await recvAnswer();
+      const channel = await acceptAnswer(answer);
+      /** @type {Queue<string | null>} */
+      const queue = messageQueue(channel);
+      await channel.send("ping");
+      const msg = await queue.recv();
+
+      assertEq(msg, "pong");
+
+      channel.close();
+    };
+
+    const b = async () => {
+      const offer = await recvOffer();
+      const { answer, waitForConnect } = await answerOffer(offer, {
+        name: "b",
+      });
+      await sendAnswer(answer);
+      const channel = await waitForConnect();
+      const queue = messageQueue(channel);
+      const msg = await queue.recv();
+
+      assertEq(msg, "ping");
+
+      await channel.send("pong");
+
+      channel.close();
+    };
+
+    await Promise.all([a(), b()]);
+  })
+})
 
 
-export const webRTCTest = async () => {
-  const { send: sendOffer, recv: recvOffer } = barrierMsg();
-  const { send: sendAnswer, recv: recvAnswer } = barrierMsg();
-
-  const a = async () => {
-    const {offer, acceptAnswer} = await startOffer({ name: "a" });
-    await sendOffer(offer);
-    const answer = await recvAnswer();
-    const socket = await acceptAnswer(answer);
-    await socket.send("ping");
-    const msg = await socket.recv();
-
-    assertEq(msg, "pong");
-
-    socket.close();
-  };
-
-  const b = async () => {
-    const offer = await recvOffer();
-    const {answer, waitForConnect} = await answerOffer(offer, { name: "b" });
-    await sendAnswer(answer);
-    const socket = await waitForConnect();
-    const msg = await socket.recv();
-
-    assertEq(msg, "ping");
-
-    await socket.send("pong");
-
-    socket.close();
-  };
-
-  return Promise.all([a(), b()]);
-};

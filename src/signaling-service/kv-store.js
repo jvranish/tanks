@@ -1,82 +1,21 @@
+import { AESKey } from "./aes.js";
 import { ETagMismatchError, KVError, TimeoutError } from "./error.js";
-import {
-  wait,
-  decryptAES,
-  encryptAES,
-  generateKeyAES,
-  isDeepEqual,
-  computeKeyHash,
-} from "./util.js";
-
-/**
- * Performs a GET request and returns the JSON data and ETag value.
- *
- * @param {string} url - The URL to send the GET request to.
- * @returns {Promise<{ value: any; etag: string | null }>} An object containing
- *   the JSON data and the ETag value.
- * @throws {Error} If the request fails.
- */
-async function simpleGet(url) {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new KVError(`Request failed with status ${response.status}`);
-  }
-
-  const value = await response.json();
-  const etag = response.headers.get("ETag");
-  return { value, etag };
-}
-
-/**
- * Performs a POST request, if an etag is provided it will be a conditional
- * post, sending JSON data only if the ETag value matches.
- *
- * @param {string} url - The URL to send the POST request to.
- * @param {any} data - The data to send as JSON.
- * @param {string | undefined | null} [etag] - The ETag value to use for the
- *   conditional request.
- * @returns {Promise<Response>} The Response object.
- * @throws {ETagMismatchError} If the ETag condition fails.
- * @throws {Error} If the request fails for other reasons.
- */
-async function simplePost(url, data, etag) {
-  /** @type {Record<string, string>} */
-  const headers = {
-    "Content-Type": "application/json",
-  };
-  if (etag) {
-    headers["If-Match"] = etag;
-  }
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(data),
-  });
-
-  if (response.status === 412) {
-    throw new ETagMismatchError("ETag mismatch");
-  }
-
-  if (!response.ok) {
-    throw new KVError(`Request failed with status ${response.status}`);
-  }
-
-  return response;
-}
-//64 random hex characters
-const foo = "b0b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3";
+import { wait, bufferToHex, hexToBuffer, randomString } from "./util.js";
 
 /** @template T */
 export class KVStore {
   /**
-   * @param {CryptoKey} aesKey - The AES key used to encrypt the data.
+   * @param {AESKey} aesKey - The AES key used to encrypt the data.
    * @param {string} storeKey - The key to store encrypted values at.
    */
   constructor(aesKey, storeKey) {
     this.serviceUrl = "https://kv.valkeyrie.com/encrypted-store";
     this.aesKey = aesKey;
     this.storeKey = storeKey;
+  }
+
+  url() {
+    return `${this.serviceUrl}/${this.storeKey}`;
   }
 
   /**
@@ -88,31 +27,108 @@ export class KVStore {
    * @returns {Promise<KVStore<T>>}
    */
   static async newStore(initialValue) {
-    const aesKey = await generateKeyAES();
-    const storeKey = await computeKeyHash(aesKey);
+    const aesKey = await AESKey.generate();
+    const storeKey = await aesKey.hash();
     const store = new KVStore(aesKey, storeKey);
     if (initialValue !== undefined) {
-      store.setValue(initialValue);
+      await store.setValue(initialValue);
     }
     return store;
   }
 
   async getValue() {
-    const { value: encryptedValue, etag } = await simpleGet(
-      `${this.serviceUrl}/${this.storeKey}`
-    );
-    const decryptedValue = await decryptAES(this.aesKey, encryptedValue);
+    const value = window.localStorage.getItem(this.storeKey);
+    if (!value) {
+      throw new KVError("GET failed");
+    }
+    const encryptedValue = JSON.parse(value);
+
+    const etag = encryptedValue.etag;
+
+    const decryptedValue = await this.aesKey.decrypt(encryptedValue);
     return { value: decryptedValue, etag };
   }
 
+  // async getValue() {
+  //   const response = await fetch(this.url());
+
+  //   if (!response.ok) {
+  //     throw new KVError(`Request failed with status ${response.status}`);
+  //   }
+
+  //   const encryptedValue = await response.json();
+
+  //   const etag = response.headers.get("ETag");
+
+  //   const decryptedValue = await this.aesKey.decrypt(encryptedValue);
+  //   return { value: decryptedValue, etag };
+  // }
+
   /**
-   * @param {T} value
-   * @param {string | undefined | null} [etag] - The ETag value to use for the
-   *   conditional request.
+   * Writes a value the store.
+   *
+   * @param {T} value The value to write.
+   * @param {string | undefined | null} [etag] An optional ETag to use for the
+   *   write. If the ETag of the value does not match this ETag, the write will
+   *   fail.
+   * @throws {ETagMismatchError} If the ETag provided does not match the ETag of
+   *   the value.
+   * @throws {KVError} If the write failed for any other reason.
    */
   async setValue(value, etag) {
-    const encryptedValue = await encryptAES(this.aesKey, value);
-    await simplePost(`${this.serviceUrl}/${this.storeKey}`, encryptedValue, etag);
+    const encryptedValue = await this.aesKey.encrypt(value);
+
+    const newETag = randomString(16);
+    if (etag) {
+      const oldValue = window.localStorage.getItem(this.storeKey);
+      if (oldValue) {
+        const oldETag = JSON.parse(oldValue).etag;
+        if (etag !== oldETag) {
+          throw new ETagMismatchError("ETag mismatch");
+        }
+      }
+    }
+    window.localStorage.setItem(
+      this.storeKey,
+      JSON.stringify({ ...encryptedValue, etag: newETag })
+    );
+  }
+  // async setValue(value, etag) {
+  //   const encryptedValue = await this.aesKey.encrypt(value);
+
+  //   /** @type {Record<string, string>} */
+  //   const headers = {
+  //     "Content-Type": "application/json",
+  //   };
+  //   if (etag) {
+  //     headers["If-Match"] = etag;
+  //   }
+  //   const response = await fetch(this.url(), {
+  //     method: "POST",
+  //     headers,
+  //     body: JSON.stringify(encryptedValue),
+  //   });
+
+  //   if (response.status === 412) {
+  //     throw new ETagMismatchError("ETag mismatch");
+  //   }
+
+  //   if (!response.ok) {
+  //     throw new KVError(`Request failed with status ${response.status}`);
+  //   }
+  // }
+
+  async toToken() {
+    const rawKey = await this.aesKey.export();
+    return bufferToHex(rawKey);
+  }
+
+  /** @param {string} token */
+  static async fromToken(token) {
+    const rawKey = hexToBuffer(token);
+    const aesKey = await AESKey.import(rawKey);
+    const storeKey = await aesKey.hash();
+    return new KVStore(aesKey, storeKey);
   }
 
   /**
@@ -137,7 +153,7 @@ export class KVStore {
 
     while (Date.now() - startTime < timeout) {
       const { value } = await this.getValue();
-      if (!isDeepEqual(value, oldValue)) {
+      if (JSON.stringify(value) !== JSON.stringify(oldValue)) {
         return value;
       }
 
@@ -150,9 +166,9 @@ export class KVStore {
   }
 
   /**
-   * Try to merge the valueToMerge with the current value of key, using the
-   * function f, and keep trying until the value doesn't change for 1.2 seconds.
-   * Throws an exception on failure.
+   * Try to merge the valueToMerge with the current value, using the function f,
+   * and keep trying until the value doesn't change for 1.2 seconds. Throws an
+   * exception on failure.
    *
    * This version of mergeValueWith takes advantage of ETag-based conditional
    * updates for better concurrency control.
@@ -166,18 +182,17 @@ export class KVStore {
   async mergeValueWith(valueToMerge, f) {
     let timeSinceLastUpdate = 0;
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       // Get the current value and ETag
       const { value: existingValue, etag } = await this.getValue();
-
       // Merge the existing value with the valueToMerge
       const mergedValue = await f(existingValue, valueToMerge);
 
-      if (!isDeepEqual(existingValue, mergedValue)) {
+      if (JSON.stringify(existingValue) !== JSON.stringify(mergedValue)) {
         // If the mergedValue is different than what's stored, then update it.
 
         try {
-          this.setValue(mergedValue);
+          await this.setValue(mergedValue, etag);
 
           // If there is an ETag and the conditional POST succeeds, immediately return
           if (etag) {
@@ -201,8 +216,8 @@ export class KVStore {
         return;
       }
 
-      // Wait at least 300ms (plus a random component to help avoid ties)
-      const waitTime = 300 + 300 * Math.random();
+      // Wait at least 100ms (plus a random component to help avoid ties)
+      const waitTime = 100 + 100 * Math.random();
       await wait(waitTime);
       timeSinceLastUpdate += waitTime;
     }

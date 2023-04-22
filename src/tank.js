@@ -14,7 +14,7 @@
 
 import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
-import { EventChunker } from "./webrtc-sockets.js";
+import { EventChunker } from "./webrtc-client-server.js";
 
 /** @param {string} str */
 function fletcher32(str) {
@@ -46,7 +46,7 @@ export function handleChunks(state) {
    * @param {{
    *   simTime: number;
    *   dt: number;
-   *   peerEvents: import("./webrtc-sockets.js").PeerMessage<TankAction>[];
+   *   peerEvents: import("./webrtc-client-server.js").PeerMessage<TankAction>[];
    * }} chunk
    */
   return (chunk) => {
@@ -330,7 +330,7 @@ export class GameState {
    * @param {{
    *   simTime: number;
    *   dt: number;
-   *   peerEvents: import("./webrtc-sockets.js").PeerMessage<TankAction>[];
+   *   peerEvents: import("./webrtc-client-server.js").PeerMessage<TankAction>[];
    * }} chunk
    */
   processChunk(chunk) {

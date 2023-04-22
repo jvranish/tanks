@@ -51,12 +51,12 @@ export class Queue {
   /**
    * Returns an element from the queue. If the queue is empty, will wait
    * asynchronously for an element to be pushed onto the queue. If there were
-   * multiple calls to `pop()` while the queue was empty, they will be resolve
+   * multiple calls to `recv()` while the queue was empty, they will be resolve
    * in the order that the calls occurred.
    * @returns { Promise<T> }
    * @memberof Queue
    */
-  async pop() {
+  async recv() {
     let element = this.queue.pop();
     if (element === undefined) {
       return new Promise((/** @type {((value: T ) => void)} */ resolve) => {

@@ -1,6 +1,3 @@
-import { has } from "./util.js";
-import { defaultKvStores, EncryptedStore } from "./encrypted-store.js";
-import { EncryptedStoreFactory } from "./encrypted-store-factory.js";
 import { KVStore } from "./kv-store.js";
 import { assert, assertEq } from "../test-helpers.js";
 
@@ -40,7 +37,7 @@ function mergeObjectWith(a, b, f) {
   const result = Object.assign({}, a);
 
   for (let k in b) {
-    const merged = has(result, k) ? f(result[k], b[k]) : b[k];
+    const merged = Object.hasOwn(result, k) ? f(result[k], b[k]) : b[k];
     // This also works as just `result[k] = merged;`, but I thought
     // I'd be more explicit here:
     if (merged === undefined) {
@@ -64,7 +61,7 @@ function mergeObjectWith(a, b, f) {
  *
  * @example
  *   // The "server" creates a new waiting list:
- *   const waitingList = await WaitingList.start(factory);
+ *   const waitingList = await WaitingList.start();
  *   // Creates a token from the resulting waiting list:
  *   const token = waitingList.toToken();
  *   // Send token to other peers using some other out-of-band method
@@ -85,7 +82,7 @@ function mergeObjectWith(a, b, f) {
  *   // on the "client", convert token to waiting list:
  *   const waitingList = await WaitingList.fromToken(token);
  *   // Then put in a token from a OneshotExchange:
- *   const token, waitForResponse = OneshotExchange.start(msg, factory);
+ *   const token, waitForResponse = OneshotExchange.start(msg);
  *   const cleanup = await waitingList.put(token);
  *   // Wait for the server to `take()` our token and then respond to our oneshot
  *   const response = await waitForResponse();
@@ -96,16 +93,15 @@ function mergeObjectWith(a, b, f) {
  */
 export class WaitingList {
   constructor(
-    /** @type {EncryptedStore<{ [k: string]: ConnectState }>} */ store
+    /** @type {KVStore<{ [k: string]: ConnectState }>} */ store
   ) {
     this.store = store;
   }
 
-  /** @param {EncryptedStoreFactory} factory */
-  static async start(factory) {
+  static async start() {
     /** @type {{ [k: string]: ConnectState }} */
     const initialValue = {};
-    const store = await factory.newStore(initialValue);
+    const store = await KVStore.newStore(initialValue);
     return new WaitingList(store);
   }
 
@@ -115,12 +111,11 @@ export class WaitingList {
 
   /**
    * @param {string} token
-   * @param {KVStore<{ iv: string; data: string }>[]} kvStores
    * @returns {Promise<WaitingList>}
    */
-  static async fromToken(token, kvStores = defaultKvStores) {
-    /** @type {EncryptedStore<{ [k: string]: ConnectState }>} */
-    const store = await EncryptedStore.fromToken(token, kvStores);
+  static async fromToken(token) {
+    /** @type {KVStore<{ [k: string]: ConnectState }>} */
+    const store = await KVStore.fromToken(token);
     return new WaitingList(store);
   }
 
@@ -170,7 +165,7 @@ export class WaitingList {
     // Returns all the keys in the `waiting` state, after transitioning them to `connecting`
     /** @type {string[]} */
     const waitingPeers = [];
-    const m = await this.store.getValue();
+    const {value: m} = await this.store.getValue();
     /** @type {{ [k: string]: ConnectState }} */
     const update = {};
     for (let k in m) {
@@ -188,31 +183,5 @@ export class WaitingList {
     }
 
     return waitingPeers;
-  }
-
-  static async WaitingListTest() {
-    const factory = await EncryptedStoreFactory.newFactory();
-    const waitingList = await WaitingList.start(factory);
-    const token = await waitingList.toToken();
-
-    const joining1 = await WaitingList.fromToken(token);
-    const joining2 = await WaitingList.fromToken(token);
-    const foo1 = joining1.put("foo1");
-    const bar2 = joining2.put("bar2");
-    const [cleanup1, cleanup2] = await Promise.all([foo1, bar2]);
-    // console.log(await waitingList.store.getValue());
-    let fooBar = await waitingList.take();
-    // console.log(await waitingList.store.getValue());
-    assert(fooBar.includes("foo1"), `expected ${fooBar} to include "foo1"`);
-    assert(fooBar.includes("bar2"), `expected ${fooBar} to include "bar2"`);
-    const cleanup3 = await joining2.put("baz3");
-    // console.log(await waitingList.store.getValue());
-    let baz3 = await waitingList.take();
-    assertEq(baz3[0], "baz3");
-    const c3 = cleanup3();
-    // console.log(await waitingList.store.getValue());
-    await Promise.all([cleanup1(), cleanup2(), c3]);
-    let emptyList = await waitingList.take();
-    assert(emptyList.length === 0, `expected ${emptyList} to be empty`);
   }
 }

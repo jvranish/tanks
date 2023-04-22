@@ -15,9 +15,6 @@
 // - [x] eslint?
 // make answer start watching for fail earlier
 
-// Can I make a cheap way to bypass the queue? Construct Channel with a callback handler?
-import { Queue } from "./queue.js";
-
 export class WebRTCError extends Error {
   /** @param {string} message */
   constructor(message) {
@@ -112,76 +109,23 @@ const defaultIceServers = [
   },
 ];
 
-export class Channel {
-  /**
-   * @param {RTCPeerConnection} connection
-   * @param {RTCDataChannel} channel
-   */
-  constructor(connection, channel) {
-    /** @type {RTCPeerConnection | undefined} */
-    this.connection = connection;
-    /** @type {RTCDataChannel | undefined} */
-    this.channel = channel;
-    /** @type {Queue<string | null>} */
-    this.queue = new Queue();
-    /** @type {(msg: string | null) => void} */
-    this.onData = (msg) => this.queue.push(msg);
-    this.channel.onmessage = (event) => this.onData(event.data);
-    this.channel.onclose = () => {
-      delete this.channel;
-      if (this.connection) {
-        this.connection.close();
-      }
-      delete this.connection;
-      this.onData(null);
-    };
-    window.addEventListener("beforeunload", () => {
-      this.close();
+/**
+ * @param {RTCPeerConnection} connection
+ * @param {RTCDataChannel} channel
+ * @returns {Promise<RTCDataChannel>} ;
+ */
+function waitForOpen(connection, channel) {
+  return new Promise((resolve) => {
+    channel.addEventListener("open", () => {
+      channel.addEventListener("close", () => {
+        connection.close();
+      });
+      window.addEventListener("beforeunload", () => {
+        channel.close();
+      });
+      resolve(channel);
     });
-  }
-
-  /**
-   * You should either use this function _or_ `recv()` but not both
-   *
-   * @param {(msg: string | null) => void} f
-   */
-  setOnDataHandler(f) {
-    this.onData = f;
-    this.queue.drain(f);
-  }
-
-  /**
-   * @param {RTCPeerConnection} connection
-   * @param {RTCDataChannel} channel
-   * @returns {Promise<Channel>} ;
-   */
-  static waitForOpen(connection, channel) {
-    return new Promise((resolve) => {
-      const c = new Channel(connection, channel);
-      // eslint-disable-next-line no-param-reassign
-      channel.onopen = () => {
-        resolve(c);
-      };
-    });
-  }
-
-  /** You should either use this function or `setOnDataHandler` but not both */
-  async recv() {
-    return await this.queue.pop();
-  }
-
-  /** @param {string} message */
-  send(message) {
-    if (this.channel) {
-      this.channel.send(message);
-    }
-  }
-
-  close() {
-    if (this.channel) {
-      this.channel.close();
-    }
-  }
+  });
 }
 
 export const startOffer = async ({
@@ -193,7 +137,7 @@ export const startOffer = async ({
     iceServers,
   });
 
-  const channel = Channel.waitForOpen(
+  const channelOpen = waitForOpen(
     connection,
     connection.createDataChannel("dataChannel")
   );
@@ -212,7 +156,7 @@ export const startOffer = async ({
   const acceptAnswer = async (answer) => {
     await connection.setRemoteDescription(new RTCSessionDescription(answer));
     return Promise.race([
-      channel,
+      channelOpen,
       connectionTimeout(name, timeout),
       iceFailed(name, connection),
     ]);
@@ -251,7 +195,7 @@ export const answerOffer = async (
 
   const waitForChannel = async () => {
     const dataChannel = await waitForDataChannel(connection);
-    return Channel.waitForOpen(connection, dataChannel);
+    return waitForOpen(connection, dataChannel);
   };
   const race = Promise.race([
     waitForChannel(),

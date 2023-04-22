@@ -1,7 +1,7 @@
 import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
-import { Server, Client, EventChunker } from "./webrtc-sockets.js";
+import { Server, Client, EventChunker } from "./webrtc-client-server.js";
 import { GameState, handleChunks, TankGameHandlers } from "./tank.js";
 import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
@@ -26,39 +26,39 @@ const html = parse({ h, text });
  *   | { state: "starting-host" }
  *   | { state: "joining-game" }
  *   | { state: "connected"; network: EventChunker<TankAction> }
- *   | { state: "error"; errorMessage: string }} ConnectionState
+ *   | { state: "error"; errorMessage: string }} UiState
  */
 
 class State {
   constructor() {
-    /** @type {ConnectionState} */
-    this.appState = { state: "main" };
+    /** @type {UiState} */
+    this.uiState = { state: "main" };
   }
 
   backToMenu() {
-    this.appState = { state: "main" };
+    this.uiState = { state: "main" };
   }
 
   // TODO rename this to JoinWait
   /** @param {string} [token] */
   joinEnterToken(token) {
-    this.appState = { state: "join-enter-token", token: token ?? "" };
+    this.uiState = { state: "join-enter-token", token: token ?? "" };
   }
 
   /** @param {string} token */
   updateJoinToken(token) {
-    if (this.appState.state === "join-enter-token") {
-      this.appState.token = token;
+    if (this.uiState.state === "join-enter-token") {
+      this.uiState.token = token;
     }
   }
 
   /** @param {string} errorMessage */
   errorMenu(errorMessage) {
-    this.appState = { state: "error", errorMessage };
+    this.uiState = { state: "error", errorMessage };
   }
 
   hostWait() {
-    this.appState = { state: "host-wait" };
+    this.uiState = { state: "host-wait" };
   }
   /**
    * @param {string} token
@@ -68,20 +68,20 @@ class State {
    * }>} start
    */
   hostGame(token, start) {
-    this.appState = { state: "host", token, start };
+    this.uiState = { state: "host", token, start };
   }
 
   startingHost() {
-    this.appState = { state: "starting-host" };
+    this.uiState = { state: "starting-host" };
   }
 
   joiningGame() {
-    this.appState = { state: "joining-game" };
+    this.uiState = { state: "joining-game" };
   }
 
   /** @param {EventChunker<TankAction>} network */
   connected(network) {
-    this.appState = { state: "connected", network };
+    this.uiState = { state: "connected", network };
   }
 }
 
@@ -109,7 +109,7 @@ function asyncEventHandler(f) {
   return (/** @type {Event} */ event) => {
     let oldState = dispatch((state) => {
       f(event, state).then((f) => {
-        if (state.appState !== oldState) {
+        if (state.uiState !== oldState) {
           console.warn(
             "state changed since event handler ran, but before the async task finished, aborting"
           );
@@ -117,7 +117,7 @@ function asyncEventHandler(f) {
           dispatch(f);
         }
       });
-    }).appState;
+    }).uiState;
   };
 }
 
@@ -126,8 +126,8 @@ function asyncEventHandler(f) {
  * @returns {ReturnType<typeof html>}
  */
 export function main(state) {
-  if (state.appState.state === "connected") {
-    return InGame({ network: state.appState.network });
+  if (state.uiState.state === "connected") {
+    return InGame({ network: state.uiState.network });
   } else {
     return Menu(state);
   }
@@ -152,8 +152,8 @@ const StartHostGame = asyncEventHandler(async (event, state) => {
 
 
 const StartGame = asyncEventHandler(async (event, state) => {
-  if (state.appState.state === "host") {
-    let { token, start } = state.appState;
+  if (state.uiState.state === "host") {
+    let { token, start } = state.uiState;
     state.startingHost();
     try {
       const {server} = await start();
@@ -173,8 +173,8 @@ const StartJoinGame = eventHandler((event, state) => {
 });
 
 const JoinGame = asyncEventHandler(async (event, state) => {
-  if (state.appState.state === "join-enter-token") {
-    let token = state.appState.token;
+  if (state.uiState.state === "join-enter-token") {
+    let token = state.uiState.token;
     state.joiningGame();
     try {
       const{ client, clientId, state: s } = await Client.connect(token);
@@ -195,9 +195,9 @@ const BackToMainMenu = eventHandler((event, state) => {
 });
 
 const UpdateJoinToken = eventHandler((event, state) => {
-  if (state.appState.state === "join-enter-token") {
+  if (state.uiState.state === "join-enter-token") {
     if (event.target instanceof HTMLInputElement) {
-      state.appState.token = event.target.value;
+      state.uiState.token = event.target.value;
     }
   }
 });
@@ -231,42 +231,42 @@ function Menu(state) {
 
 /** @param {State} state */
 function WhichMenu(state) {
-  if (state.appState.state === "main") {
+  if (state.uiState.state === "main") {
     return MainMenu({
       startHostGame: StartHostGame,
       startJoinGame: StartJoinGame,
     });
   } else if (
-    state.appState.state === "host-wait" ||
-    state.appState.state === "starting-host"
+    state.uiState.state === "host-wait" ||
+    state.uiState.state === "starting-host"
   ) {
     return MenuWait({
       back: BackToMainMenu,
       msg:
-        state.appState.state === "host-wait"
+        state.uiState.state === "host-wait"
           ? "Waiting for game to start"
           : "Starting game...",
     });
-  } else if (state.appState.state === "joining-game") {
+  } else if (state.uiState.state === "joining-game") {
     return MenuWait({
       back: BackToMainMenu,
       msg: "Connecting to game...",
     });
-  } else if (state.appState.state === "host") {
+  } else if (state.uiState.state === "host") {
     return MenuHostGame({
       back: BackToMainMenu,
-      gameCode: state.appState.token,
+      gameCode: state.uiState.token,
       startGame: StartGame,
     });
-  } else if (state.appState.state === "join-enter-token") {
+  } else if (state.uiState.state === "join-enter-token") {
     return MenuJoinEnterToken({
       back: BackToMainMenu,
       joinGame: JoinGame,
-      token: state.appState.token,
+      token: state.uiState.token,
     });
-  } else if (state.appState.state === "error") {
+  } else if (state.uiState.state === "error") {
     return MenuError({
-      errorMessage: state.appState.errorMessage,
+      errorMessage: state.uiState.errorMessage,
       back: BackToMainMenu,
     });
   } else {
@@ -308,11 +308,6 @@ function MenuWait({ back, msg }) {
   </div>`;
 }
 
-/** @param {string} gameCode */
-const copyGameCodeToClipboard = (gameCode) => {
-  navigator.clipboard.writeText(gameCode);
-};
-
 /** @param {{ back: () => void; gameCode: string; startGame: () => void }} props */
 function MenuHostGame({ back, startGame, gameCode }) {
   return html`<div>
@@ -323,7 +318,7 @@ function MenuHostGame({ back, startGame, gameCode }) {
       <abbr title="Copy to clipboard">
         <button
           style=${{ fontSize: "1.5em" }}
-          onclick=${() => copyGameCodeToClipboard(gameCode)}
+          onclick=${() => navigator.clipboard.writeText(gameCode)}
         >
           ${"📋"}
         </button>

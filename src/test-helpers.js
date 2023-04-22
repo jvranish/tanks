@@ -1,3 +1,34 @@
+
+
+export const TEST_TIMEOUT = 20000;
+
+/**
+ * @type {{
+ *   desc: string;
+ *   fn: () => void;
+ *   itBlocks: { desc: string; fn: () => Promise<void> }[];
+ * }[]}
+ */
+export const tests = [];
+
+/**
+ * @param {string} desc
+ * @param {() => void} fn
+ */
+export function describe(desc, fn) {
+  tests.push({ desc, fn, itBlocks: [] });
+  fn();
+}
+
+/**
+ * @param {string} desc
+ * @param {() => Promise<void>} fn
+ */
+export function it(desc, fn) {
+  const currentDescribeBlock = tests[tests.length - 1];
+  currentDescribeBlock.itBlocks.push({ desc, fn });
+}
+
 export class AssertError extends Error {
   constructor(/** @type {string} */ message) {
     super(message);
@@ -29,6 +60,42 @@ export function assertEq(a, b) {
     console.error(errorMsg);
     throw new AssertError(errorMsg);
   }
+}
+
+/**
+ * @param {() => void} fn
+ * @param {(e: unknown) => void} test
+ */
+export function assertThrows(fn, test) {
+  try {
+    fn();
+  } catch (e) {
+    if (e instanceof Error) {
+      test(e);
+    } else {
+      throw new AssertError("Did not throw error of type Error");
+    }
+    return;
+  }
+  throw new AssertError("Expected function to throw");
+}
+
+/**
+ * @param {Promise<any>} fn
+ * @param {(e: Error) => void} test
+ */
+export async function assertPromiseThrows(fn, test) {
+  try {
+    await fn;
+  } catch (e) {
+    if (e instanceof Error) {
+      test(e);
+    } else {
+      throw new AssertError("Did not throw error of type Error");
+    }
+    return;
+  }
+  throw new AssertError("Expected function to throw");
 }
 
 /**

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Rotating Rectangle</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+
+    }
+    /* canvas:focus {
+      outline: none;
+    } */
+  </style>
+</head>
+
+<body>
+  <!-- <div id="root"></div> -->
+  <!-- <rotating-rectangle></rotating-rectangle> -->
+  <canvas tabindex="0"></canvas>
+  <!-- <canvas-wrapper></canvas-wrapper> -->
+
+  <script type="module">
+    import { parse } from "./lib/hyperlit.js";
+    import { h, text, patch } from "./lib/hyperapp-mini.js";
+    import { mini } from "./lib/mini.js";
+
+    const html = parse({ h, text });
+
+
+
+    let angle = 0;
+    let prevTime = performance.now();
+
+    function onframe() {
+      const currentTime = performance.now();
+      const canvas = document.querySelector("canvas");
+      const ctx = canvas.getContext("2d");
+      // Calculate the time elapsed since the previous frame
+      const deltaTime = (currentTime - prevTime) / 1000;
+
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Save the current canvas state
+      ctx.save();
+
+      // Translate the canvas to the center of the rectangle
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+
+      // Rotate the canvas by the current angle scaled by the elapsed time
+      ctx.rotate(angle);
+
+      // Draw the rectangle
+      ctx.fillStyle = 'red';
+      ctx.fillRect(-50, -50, 100, 100);
+
+      // Restore the canvas state
+      ctx.restore();
+
+      // Update the previous time and the rotation angle
+      prevTime = currentTime;
+      angle += 3 * deltaTime;
+      requestAnimationFrame(onframe);
+    }
+
+
+    // class RotatingRectangle extends HTMLElement {
+    //   constructor() {
+    //     super();
+
+    //     // Create the canvas element and set its width and height
+    //     const canvas = document.createElement('canvas');
+
+    //     // Add the canvas element to the custom element and set its dimensions
+    //     this.appendChild(canvas);
+    //     canvas.width = this.clientWidth;
+    //     canvas.height = this.clientHeight;
+
+    //     // Start the animation loop
+    //     requestAnimationFrame(onframe);
+    //   }
+    // }
+
+    // customElements.define('rotating-rectangle', RotatingRectangle);
+
+
+    const canvas = document.querySelector("canvas");
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    canvas.focus();
+    window.addEventListener("keydown", (e) => {
+      console.log(e);
+    });
+    requestAnimationFrame(onframe);
+
+
+
+  </script>
+</body>
+
+</html>
