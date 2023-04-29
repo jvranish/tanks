@@ -4,10 +4,10 @@ import { KVStore } from "./kv-store.js";
 /**
  * @template T
  * @param {T} msg Message to send
- * @param {number} [timeout] Timeout in seconds, default is 300
+ * @param {number} [timeout] Timeout in milliseconds, default is 10000
  * @returns {Promise<{ token: string; waitForResponse: () => Promise<T> }>}
  */
-export async function start(msg, timeout = 300) {
+export async function start(msg, timeout = 10000) {
   const store = await KVStore.newStore(msg);
   const waitForResponse = async () => await store.waitForNewValue(msg, timeout);
   const token = await store.toToken();

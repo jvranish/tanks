@@ -165,12 +165,13 @@ export class EventChunker {
    *   simTime: number;
    *   tickPeriodMs: number;
    *   timeChunkMs: number;
+   *   now: number;
    * }} init
    */
-  constructor({ simTime, tickPeriodMs, timeChunkMs }) {
+  constructor({ simTime, tickPeriodMs, timeChunkMs, now }) {
     this.simTime = simTime;
     this.localTime = simTime;
-    this.deltaReference = performance.now();
+    this.deltaReference = now;
     this.tickPeriodMs = tickPeriodMs;
     this.timeChunkMs = timeChunkMs;
     /**
@@ -186,31 +187,6 @@ export class EventChunker {
 
     /** @type {null | ReturnType<setInterval>} */
     this.chunkTimer = null;
-  }
-
-  /**
-   * @param {(chunk: {
-   *   dt: number;
-   *   peerEvents: PeerMessage<E>[];
-   *   simTime: number;
-   * }) => void} onChunk
-   */
-  startProcessingEvents(onChunk) {
-    this.onChunk = onChunk;
-    this.chunkTimer = setInterval(() => {
-      const time = performance.now();
-      const dt = time - this.deltaReference;
-      this.deltaReference = time;
-      for (const chunk of this.getEvents(dt)) {
-        onChunk(chunk);
-        if (
-          this.chunkTimer &&
-          chunk.peerEvents.some((msg) => msg.type === "disconnected")
-        ) {
-          clearInterval(this.chunkTimer);
-        }
-      }
-    }, this.timeChunkMs);
   }
 
   /** @param {E} peerEvent */
@@ -240,8 +216,9 @@ export class EventChunker {
     this.msgQueue.push(msg);
   }
 
-  /** @param {number} dt */
-  getEvents(dt) {
+  getEvents(time = performance.now()) {
+    const dt = time - this.deltaReference;
+    this.deltaReference = time;
     const fullQueueSize = this.tickPeriodMs / this.timeChunkMs;
     // if we're too far behind, advance time to the next chunk immediately
     const maxChunksBehind = 3;
@@ -308,10 +285,18 @@ export class Client extends EventChunker {
    *   simTime: number;
    *   tickPeriodMs: number;
    *   timeChunkMs: number;
+   *   now?: number;
    * }} init
    */
-  constructor({ channel, clientId, simTime, tickPeriodMs, timeChunkMs }) {
-    super({ simTime, tickPeriodMs, timeChunkMs });
+  constructor({
+    channel,
+    clientId,
+    simTime,
+    tickPeriodMs,
+    timeChunkMs,
+    now = performance.now(),
+  }) {
+    super({ simTime, tickPeriodMs, timeChunkMs, now });
     this.channel = channel;
     this.clientId = clientId;
   }
@@ -325,10 +310,11 @@ export class Client extends EventChunker {
   /**
    * @template S,E
    * @param {string} token
+   * @param {number} timeout
    * @returns {Promise<{ client: Client<E>; clientId: string; state: S }>}
    */
-  static async connect(token) {
-    const channel = await connect(token);
+  static async connect(token, timeout) {
+    const channel = await connect(token, timeout);
     const connectMsg = await new Promise(
       (resolve, reject) => (
         (channel.onmessage = resolve),
@@ -336,11 +322,10 @@ export class Client extends EventChunker {
         (channel.onclose = reject)
       )
     );
-    channel.onmessage = null;
-    channel.onerror = null;
-    channel.onclose = null;
-    let { clientId, simTime, tickPeriodMs, timeChunkMs, state } =
-      JSON.parse(connectMsg);
+
+    let { clientId, simTime, tickPeriodMs, timeChunkMs, state } = JSON.parse(
+      connectMsg.data
+    );
 
     const client = new Client({
       channel,
@@ -350,7 +335,7 @@ export class Client extends EventChunker {
       timeChunkMs,
     });
 
-    channel.addEventListener("message", (e) => {
+    channel.onmessage = (e) => {
       /** @type {Message<S, E>} */
       const msg = JSON.parse(e.data);
       if (msg.type === "peerMessage") {
@@ -360,15 +345,17 @@ export class Client extends EventChunker {
       } else {
         throw new Error(`Unexpected message type: ${msg.type}`);
       }
-    });
+    };
 
-    channel.addEventListener("close", () => {
+    channel.onclose = () => {
       client.recvMsg({ type: "disconnected", simTime: client.simTime });
-    });
+      client.processTick(client.simTime + tickPeriodMs);
+    };
 
     channel.onerror = (e) => {
       console.error(e);
       client.recvMsg({ type: "disconnected", simTime: client.simTime });
+      client.processTick(client.simTime + tickPeriodMs);
     };
 
     return { client, clientId, state };
@@ -407,11 +394,12 @@ export class Server extends EventChunker {
    * @param {() => void} stop
    * @param {ServerCallbacks<S, E>} callbacks
    */
-  constructor(token, stop, callbacks) {
+  constructor(token, stop, callbacks, now = performance.now()) {
     super({
       simTime: 0,
       tickPeriodMs: 50,
       timeChunkMs: 10,
+      now,
     });
     /** @type {{ [key: string]: RTCDataChannel }} */
     this.clients = {};

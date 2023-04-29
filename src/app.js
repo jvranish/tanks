@@ -2,9 +2,7 @@ import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
 import { Server, Client, EventChunker } from "./webrtc-client-server.js";
-import { GameState, handleChunks, TankGameHandlers } from "./tank.js";
-import { CanvasWrapper } from "./canvas.js";
-import { PCG32 } from "./pcg.js";
+import { GameState, TankGameHandlers } from "./tank.js";
 
 const html = parse({ h, text });
 
@@ -157,7 +155,6 @@ const StartGame = asyncEventHandler(async (event, state) => {
     state.startingHost();
     try {
       const {server} = await start();
-      server.startProcessingEvents(handleChunks(gameState));
       return (state) => state.connected(server);
     } catch (e) {
       console.error(e);
@@ -177,9 +174,8 @@ const JoinGame = asyncEventHandler(async (event, state) => {
     let token = state.uiState.token;
     state.joiningGame();
     try {
-      const{ client, clientId, state: s } = await Client.connect(token);
+      const{ client, clientId, state: s } = await Client.connect(token, 15000);
       gameState = GameState.fromJSON(s);
-      client.startProcessingEvents(handleChunks(gameState));
       return (state) => state.connected(client);
     } catch (e) {
       console.error(e);

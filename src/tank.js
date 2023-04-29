@@ -12,6 +12,7 @@
  * @property {number} moving - The moving of the tank.
  */
 
+import { dispatch } from "./app.js";
 import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
 import { EventChunker } from "./webrtc-client-server.js";
@@ -39,36 +40,12 @@ function fletcher32(str) {
 
 /** @typedef {{ move: number; turn: number; fire: boolean }} TankAction */
 
-/** @param {GameState} state */
-export function handleChunks(state) {
-  let lastSimTime = 0;
-  /**
-   * @param {{
-   *   simTime: number;
-   *   dt: number;
-   *   peerEvents: import("./webrtc-client-server.js").PeerMessage<TankAction>[];
-   * }} chunk
-   */
-  return (chunk) => {
-    const { simTime } = chunk;
-    state.processChunk(chunk);
-    // every 10 seconds of sim time, print out the state
-    if (simTime > lastSimTime + 10000) {
-      console.log("state at sim time", simTime, lastSimTime);
-      // round to the nearest 10 seconds
-      lastSimTime = Math.round(simTime / 10000) * 10000;
-      console.log(state);
-      console.log("state hash", fletcher32(JSON.stringify(state)));
-    }
-  };
-}
-
-
 /**
  * @param {GameState} state
  * @param {EventChunker<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
+  let lastSimTime = 0;
   /** @param {CustomEvent} e */
   const onframe = (e) => {
     const { time } = e.detail;
@@ -79,6 +56,27 @@ export function TankGameHandlers(state, network) {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       throw new Error("no context");
+    }
+
+    for (const chunk of network.getEvents()) {
+      state.processChunk(chunk);
+      // every 10 seconds of sim time, print out the state
+      const { simTime } = chunk;
+      if (simTime > lastSimTime + 10000) {
+        console.log("state at sim time", simTime, lastSimTime);
+        // round to the nearest 10 seconds
+        lastSimTime = Math.round(simTime / 10000) * 10000;
+        console.log(state);
+        console.log("state hash", fletcher32(JSON.stringify(state)));
+      }
+
+      if (chunk.peerEvents.some((msg) => msg.type === "disconnected")) {
+        console.log("disconnected!");
+        dispatch((uiState) => {
+          console.log("back to menu");
+          uiState.backToMenu();
+        });
+      }
     }
 
     draw(state, ctx);

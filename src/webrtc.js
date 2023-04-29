@@ -5,6 +5,8 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/icecandidate_event
 // https://developer.mozilla.org/en-US/docs/Glossary/SDP
 
+import enableConnectionLogs from "./webrtc-debug.js";
+
 // - [x] simplify some of the wait-for-state handlers
 // - [x] simplify names? (connection, source?)
 // - [x] assert on message contents in tests
@@ -136,6 +138,7 @@ export const startOffer = async ({
   const connection = new RTCPeerConnection({
     iceServers,
   });
+  enableConnectionLogs(name, connection);
 
   const channelOpen = waitForOpen(
     connection,
@@ -182,6 +185,7 @@ export const answerOffer = async (
   const connection = new RTCPeerConnection({
     iceServers,
   });
+  enableConnectionLogs(name, connection);
 
   await connection.setRemoteDescription(new RTCSessionDescription(offer));
 

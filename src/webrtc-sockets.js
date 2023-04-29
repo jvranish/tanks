@@ -57,12 +57,14 @@ export async function listen() {
   return { token, start };
 }
 
-/** @param {string} token */
-export async function connect(token) {
+/** @param {string} token
+ @param {number} timeout */
+export async function connect(token, timeout) {
   const waitingList = await WaitingList.fromToken(token);
   const { offer, acceptAnswer } = await startOffer();
   const { token: internalToken, waitForResponse } = await OneshotExchange.start(
-    offer
+    offer,
+    timeout
   );
   await waitingList.put(internalToken);
 
