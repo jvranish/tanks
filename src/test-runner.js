@@ -26,17 +26,14 @@ export async function runTests() {
           });
         }
       })
-      // .then((result) => {
-      //   if (result.passed) {
-      //     console.log(`✔ ${result.testDesc}: ${result.itDesc}`);
-      //   } else {
-      //     console.log(
-      //       `✘ ${result.testDesc}: ${result.itDesc} - ${result.error}`
-      //     );
-      //     console.error(result.error);
-      //   }
-      //   return result;
-      // });
+      .then((result) => {
+        if (result.passed) {
+          console.log(`✔ ${result.testDesc}: ${result.itDesc}`);
+        } else {
+          console.error(`✘ ${result.testDesc}: ${result.itDesc} - ${result.error}:\n ${result.error.stack}`);
+        }
+        return result;
+      });
       testPromises.push(promise);
     }
   }
@@ -52,8 +49,7 @@ export async function runTests() {
     if (result.passed) {
       console.log(`✔ ${result.testDesc}: ${result.itDesc}`);
     } else {
-      console.log(`✘ ${result.testDesc}: ${result.itDesc} - ${result.error}`);
-      console.error(result.error);
+      console.error(`✘ ${result.testDesc}: ${result.itDesc} - ${result.error}:\n ${result.error.stack}`);
     }
   });
 }

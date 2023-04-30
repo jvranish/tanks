@@ -73,8 +73,7 @@ export function TankGameHandlers(state, network) {
       if (chunk.peerEvents.some((msg) => msg.type === "disconnected")) {
         console.log("disconnected!");
         dispatch((uiState) => {
-          console.log("back to menu");
-          uiState.backToMenu();
+          uiState.errorMenu("Host disconnected");
         });
       }
     }

@@ -106,13 +106,3 @@ export class AESKey {
     return bufferToHex(hashBuffer);
   }
 }
-
-export async function BasicEncryptionTest() {
-  let testObj = { test: "foo" };
-  let key = await AESKey.generate();
-  let encryptedData = JSON.stringify(await key.encrypt(testObj));
-  let exportedKey = await key.export();
-  let importedKey = await AESKey.import(exportedKey);
-  let decryptedData = await importedKey.decrypt(JSON.parse(encryptedData));
-  assertEq(decryptedData.test, "foo");
-}

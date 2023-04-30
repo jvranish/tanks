@@ -1,8 +1,6 @@
-import { Queue } from "./queue.js";
 import { WaitingList } from "./signaling-service/waiting-list.js";
 import * as OneshotExchange from "./signaling-service/oneshot-exchange.js";
 import { startOffer, answerOffer } from "./webrtc.js";
-import { randomString, wait } from "./signaling-service/util.js";
 
 /** @param {string} token */
 export async function accept(token) {
@@ -57,8 +55,10 @@ export async function listen() {
   return { token, start };
 }
 
-/** @param {string} token
- @param {number} timeout */
+/**
+ * @param {string} token
+ * @param {number} timeout
+ */
 export async function connect(token, timeout) {
   const waitingList = await WaitingList.fromToken(token);
   const { offer, acceptAnswer } = await startOffer();
@@ -73,7 +73,6 @@ export async function connect(token, timeout) {
   const channel = await acceptAnswer(answer);
   return channel;
 }
-
 
 /** @param {number} [timeout] */
 export async function connectDirect(timeout) {
