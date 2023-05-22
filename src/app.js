@@ -1,10 +1,11 @@
 import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
-import { Client} from "./networking/client.js";
-import { Server} from "./networking/server.js";
+import { Client } from "./networking/client.js";
+import { Server } from "./networking/server.js";
 import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
 import { GameState, TankGameHandlers } from "./tank.js";
+import { connect, listen } from "./webrtc/webrtc-sockets.js";
 
 const html = parse({ h, text });
 
@@ -14,7 +15,7 @@ const html = parse({ h, text });
  * @typedef {| { state: "connecting"; token: string }
  *   | { state: "main" }
  *   | { state: "join-enter-token"; token: string }
- *   | { state: "host-wait"}
+ *   | { state: "host-wait" }
  *   | {
  *       state: "host";
  *       token: string;
@@ -85,8 +86,7 @@ class State {
   }
 }
 
-
-const {dispatch, eventHandler} = mini(
+const { dispatch, eventHandler } = mini(
   new State(),
   main,
   document.getElementById("root"),
@@ -101,10 +101,7 @@ if (hash !== "") {
   });
 }
 
-
-/**
- * @param {(event: Event, state: State) => Promise<(state: State) => void>} f
- */
+/** @param {(event: Event, state: State) => Promise<(state: State) => void>} f */
 function asyncEventHandler(f) {
   return (/** @type {Event} */ event) => {
     let oldState = dispatch((state) => {
@@ -142,7 +139,14 @@ function getGameState() {
 const StartHostGame = asyncEventHandler(async (event, state) => {
   state.hostWait();
   try {
-    const { token, start } = await Server.init({ getState: getGameState });
+    const { token, start: startListen } = await listen();
+    const start = async () => {
+      const server = new Server({ getState: getGameState });
+      const { stop } = await startListen({
+        onConnect: (channel) => server.onConnect(channel),
+      });
+      return { token, server, stop };
+    };
     return (state) => state.hostGame(token, start);
   } catch (e) {
     console.error(e);
@@ -150,13 +154,12 @@ const StartHostGame = asyncEventHandler(async (event, state) => {
   }
 });
 
-
 const StartGame = asyncEventHandler(async (event, state) => {
   if (state.uiState.state === "host") {
     let { token, start } = state.uiState;
     state.startingHost();
     try {
-      const {server} = await start();
+      const { server } = await start();
       return (state) => state.connected(server);
     } catch (e) {
       console.error(e);
@@ -176,13 +179,14 @@ const JoinGame = asyncEventHandler(async (event, state) => {
     let token = state.uiState.token;
     state.joiningGame();
     try {
-      const{ client, clientId, state: s } = await Client.connect(token, 15000);
+      let channel = await connect(token, 15000);
+      const { client, clientId, state: s } = await Client.init(channel);
       gameState = GameState.fromJSON(s);
       return (state) => state.connected(client);
     } catch (e) {
       console.error(e);
       return (state) => state.errorMenu("Failed to connect to server");
-    } 
+    }
   } else {
     throw new Error("Invalid state");
   }

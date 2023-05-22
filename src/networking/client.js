@@ -1,5 +1,4 @@
 import { Identity } from "../signaling-service/identity.js";
-import { connect } from "../webrtc/webrtc-sockets.js";
 import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-event-queue.js";
 
 
@@ -40,8 +39,7 @@ export class Client extends TimeChunkedEventQueue {
 
   /**
    * @template S,E
-   * @param {string} token
-   * @param {number} [timeout]
+   * @param {RTCDataChannel} channel
    * @returns {Promise<{
    *   client: Client<E>;
    *   clientId: string;
@@ -49,8 +47,7 @@ export class Client extends TimeChunkedEventQueue {
    *   identity: Identity;
    * }>}
    */
-  static async connect(token, timeout = 15000) {
-    const channel = await connect(token, timeout);
+  static async init(channel) {
 
     const identity = await Identity.generate();
     const publicIdentity = await identity.publicId();

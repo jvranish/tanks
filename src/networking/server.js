@@ -1,6 +1,5 @@
 import { PublicIdentity } from "../signaling-service/identity.js";
 import { randomString } from "../signaling-service/util.js";
-import { listen } from "../webrtc/webrtc-sockets.js";
 import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-event-queue.js";
 
 /**
@@ -16,11 +15,9 @@ import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-
 export class Server extends TimeChunkedEventQueue {
   /**
    * @memberof Server
-   * @param {string} token
-   * @param {() => void} stop
    * @param {ServerCallbacks<S, E>} callbacks
    */
-  constructor(token, stop, callbacks, now = performance.now()) {
+  constructor(callbacks, now = performance.now()) {
     super({
       simTime: 0,
       tickPeriodMs: 50,
@@ -29,13 +26,19 @@ export class Server extends TimeChunkedEventQueue {
     });
     /** @type {{ [key: string]: RTCDataChannel }} */
     this.clients = {};
-    this.token = token;
-    this.stop = stop;
     this.callbacks = callbacks;
     this.clientId = randomString(16);
     this.tickTimer = setInterval(() => {
       this.onTick();
     }, this.tickPeriodMs);
+
+    /** @type {import("./time-chunked-event-queue.js").PeerMessage<E>} */
+    const joinMsg = {
+      type: "peerJoined",
+      clientId: this.clientId,
+      simTime: this.simTime,
+    };
+    this.recvMsg(joinMsg);
   }
 
   // used for testing
@@ -160,32 +163,5 @@ export class Server extends TimeChunkedEventQueue {
         simTime: this.simTime,
       },
     });
-  }
-  getToken() {
-    return this.token;
-  }
-  /**
-   * @template S, E
-   * @param {ServerCallbacks<S, E>} serverCallbacks
-   */
-  static async init(serverCallbacks) {
-    let { token, start: startListen } = await listen();
-
-    const start = async (now = performance.now()) => {
-      /** @param {RTCDataChannel} channel */
-      const onConnect = async (channel) => server.onConnect(channel);
-      let { stop } = await startListen({ onConnect });
-      let server = new Server(token, stop, serverCallbacks, now);
-      /** @type {import("./time-chunked-event-queue.js").PeerMessage<E>} */
-      const joinMsg = {
-        type: "peerJoined",
-        clientId: server.clientId,
-        simTime: server.simTime,
-      };
-      server.recvMsg(joinMsg);
-      // server.sendEvent(joinMsg);
-      return { token, server };
-    };
-    return { token, start };
   }
 }

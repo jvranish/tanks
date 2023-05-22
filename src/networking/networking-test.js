@@ -5,6 +5,7 @@ import {
   describe,
   it,
 } from "../../test/test-helpers.js";
+import { connect, listen } from "../webrtc/webrtc-sockets.js";
 import { Client } from "./client.js";
 import { Server } from "./server.js";
 import { TimeChunkedEventQueue } from "./time-chunked-event-queue.js";
@@ -50,36 +51,52 @@ async function expectExactEvents(client, t, events) {
 
 describe("Server", function () {
   it("client should get the correct server state on connect", async function () {
-    const { token, start } = await Server.init({
-      getState: () => "foo",
-    });
+    const { token, start } = await listen();
 
-    const { server } = await start(0);
+    const server = new Server({
+      getState: () => "foo",
+    }, 0);
+
+    const { stop } = await start({
+      onConnect: (channel) => server.onConnect(channel),
+    });
 
     server.stopTickTimer();
 
-    const { state } = await Client.connect(token);
+    const channel = await connect(token);
+
+    const { state } = await Client.init(channel);
 
     assertEq(state, "foo");
   });
   it("should work", async function () {
-    const { token, start } = await Server.init({
-      getState: () => ({ x: 0, y: 0 }),
-    });
 
-    const { server } = await start(0);
+    const { token, start } = await listen();
+
+    const server = new Server(
+      {
+        getState: () => ({ x: 0, y: 0 }),
+      },
+      0
+    );
+
+    const { stop } = await start({
+      onConnect: (channel) => server.onConnect(channel),
+    });
 
     server.stopTickTimer();
 
-    const { client, clientId, state, identity } = await Client.connect(token);
+    const channel = await connect(token);
+    const { client, clientId, state, identity } = await Client.init(channel);
 
     console.log("client: ", client.clientId);
 
+    const channel2 = await connect(token);
     const {
       client: client2,
       clientId: clientId2,
       state: state2,
-    } = await Client.connect(token);
+    } = await Client.init(channel2);
 
     client.sendEvent({ type: "move", x: 1, y: 1 });
     client2.sendEvent({ type: "move", x: 2, y: 2 });

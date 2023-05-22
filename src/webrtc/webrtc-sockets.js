@@ -57,9 +57,9 @@ export async function listen() {
 
 /**
  * @param {string} token
- * @param {number} timeout
+ * @param {number} [timeout]
  */
-export async function connect(token, timeout) {
+export async function connect(token, timeout = 15000) {
   const waitingList = await WaitingList.fromToken(token);
   const { offer, acceptAnswer } = await startOffer();
   const { token: internalToken, waitForResponse } = await OneshotExchange.start(
