@@ -1,6 +1,6 @@
 // @ts-check
-import { Queue } from "./queue.js";
-import { assertEq, assertPromiseThrows, barrierMsg, describe, it } from "./test-helpers.js";
+import { Queue } from "../queue.js";
+import { assertEq, assertPromiseThrows, barrierMsg, describe, it } from "../../test/test-helpers.js";
 import { startOffer, answerOffer } from "./webrtc.js";
 
 

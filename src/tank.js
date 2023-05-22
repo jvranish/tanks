@@ -15,7 +15,7 @@
 import { dispatch } from "./app.js";
 import { CanvasWrapper } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
-import { EventChunker } from "./webrtc-client-server.js";
+import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
 
 /** @param {string} str */
 function fletcher32(str) {
@@ -42,7 +42,7 @@ function fletcher32(str) {
 
 /**
  * @param {GameState} state
- * @param {EventChunker<TankAction>} network
+ * @param {TimeChunkedEventQueue<TankAction>} network
  */
 export function TankGameHandlers(state, network) {
   let lastSimTime = 0;
@@ -327,7 +327,7 @@ export class GameState {
    * @param {{
    *   simTime: number;
    *   dt: number;
-   *   peerEvents: import("./webrtc-client-server.js").PeerMessage<TankAction>[];
+   *   peerEvents: import("./networking/time-chunked-event-queue.js").PeerMessage<TankAction>[];
    * }} chunk
    */
   processChunk(chunk) {

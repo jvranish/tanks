@@ -1,7 +1,9 @@
 import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
-import { Server, Client, EventChunker } from "./webrtc-client-server.js";
+import { Client} from "./networking/client.js";
+import { Server} from "./networking/server.js";
+import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
 import { GameState, TankGameHandlers } from "./tank.js";
 
 const html = parse({ h, text });
@@ -23,7 +25,7 @@ const html = parse({ h, text });
  *     }
  *   | { state: "starting-host" }
  *   | { state: "joining-game" }
- *   | { state: "connected"; network: EventChunker<TankAction> }
+ *   | { state: "connected"; network: TimeChunkedEventQueue<TankAction> }
  *   | { state: "error"; errorMessage: string }} UiState
  */
 
@@ -77,7 +79,7 @@ class State {
     this.uiState = { state: "joining-game" };
   }
 
-  /** @param {EventChunker<TankAction>} network */
+  /** @param {TimeChunkedEventQueue<TankAction>} network */
   connected(network) {
     this.uiState = { state: "connected", network };
   }
@@ -198,7 +200,7 @@ const UpdateJoinToken = eventHandler((event, state) => {
   }
 });
 
-/** @param {{ network: EventChunker<TankAction> }} props */
+/** @param {{ network: TimeChunkedEventQueue<TankAction> }} props */
 function InGame({ network }) {
   return html`
     <canvas-wrapper ${TankGameHandlers(gameState, network)}></canvas-wrapper>

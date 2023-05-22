@@ -72,7 +72,8 @@ that we're not waiting for any new events and can run the simulation up to the
 timestamp on the tick.
 
 
-Additionally, in order to prevent "stuttering" we actually _can't_ process any events we've gotten since the last tick, until we get the _next_ tick.
+Additionally, in order to prevent "stuttering" we actually _can't_ process any events
+ we've gotten since the last tick, until we get the _next_ tick.
 Consider the scenario with the missile again, let say the opponent has a shield, 
 
 
@@ -118,8 +119,9 @@ onTick(events?) onJoin onLeft onEvent
 */
 // TODO process events with an interval timer instead of on frame?
 
-import { randomString } from "./signaling-service/util.js";
-import { connect, listen } from "./webrtc-sockets.js";
+import { Identity, PublicIdentity } from "../signaling-service/identity.js";
+import { randomString } from "../signaling-service/util.js";
+import { connect, listen } from "../webrtc/webrtc-sockets.js";
 
 // TODO add a sendObj to Channel?
 
@@ -146,6 +148,9 @@ import { connect, listen } from "./webrtc-sockets.js";
 /**
  * @template S, E
  * @typedef {| { type: "tick"; simTime: number }
+ *   | { type: "identity"; identity: { publicKey: string } }
+ *   | { type: "challenge"; challenge: string }
+ *   | { type: "signature"; signature: string }
  *   | {
  *       type: "connected";
  *       clientId: string;
@@ -157,9 +162,26 @@ import { connect, listen } from "./webrtc-sockets.js";
  *   | { type: "peerMessage"; msg: PeerMessage<E> }} Message
  */
 
+
+/**
+ * @template T
+ * @param {T[]} arr
+ * @param {(x: T) => boolean} predicate
+ * @returns {T[]}
+ */
+function shiftWhile(arr, predicate) {
+  let removedElements = [];
+  while (arr.length > 0 && predicate(arr[0])) {
+    // The shift can't fail as we've just checked for a non-zero array length
+    removedElements.push(/** @type {T} */ (arr.shift()));
+  }
+  return removedElements;
+}
+
+
 // TODO come up with a better name for this
 /** @template E */
-export class EventChunker {
+export class TimeChunkedEventQueue {
   /**
    * @param {{
    *   simTime: number;
@@ -273,263 +295,37 @@ export class EventChunker {
   }
 }
 
+
+
 /**
- * @template E
- * @extends EventChunker<E>
+ * @template S, E
+ * @template {Message<S, E>["type"]} T
+ * @param {Omit<Extract<Message<S, E>, { type: T }>, "type">} msg
+ * @param {RTCDataChannel} channel
+ * @param {T} msgType
  */
-export class Client extends EventChunker {
-  /**
-   * @param {{
-   *   channel: RTCDataChannel;
-   *   clientId: string;
-   *   simTime: number;
-   *   tickPeriodMs: number;
-   *   timeChunkMs: number;
-   *   now?: number;
-   * }} init
-   */
-  constructor({
-    channel,
-    clientId,
-    simTime,
-    tickPeriodMs,
-    timeChunkMs,
-    now = performance.now(),
-  }) {
-    super({ simTime, tickPeriodMs, timeChunkMs, now });
-    this.channel = channel;
-    this.clientId = clientId;
-  }
-
-  /** @param {E} peerEvent */
-  sendEvent(peerEvent) {
-    const msg = JSON.stringify(peerEvent);
-    this.channel.send(msg);
-  }
-
-  /**
-   * @template S,E
-   * @param {string} token
-   * @param {number} timeout
-   * @returns {Promise<{ client: Client<E>; clientId: string; state: S }>}
-   */
-  static async connect(token, timeout) {
-    const channel = await connect(token, timeout);
-    const connectMsg = await new Promise(
-      (resolve, reject) => (
-        (channel.onmessage = resolve),
-        (channel.onerror = reject),
-        (channel.onclose = reject)
-      )
-    );
-
-    let { clientId, simTime, tickPeriodMs, timeChunkMs, state } = JSON.parse(
-      connectMsg.data
-    );
-
-    const client = new Client({
-      channel,
-      clientId,
-      simTime,
-      tickPeriodMs,
-      timeChunkMs,
-    });
-
-    channel.onmessage = (e) => {
-      /** @type {Message<S, E>} */
-      const msg = JSON.parse(e.data);
-      if (msg.type === "peerMessage") {
-        client.recvMsg(msg.msg);
-      } else if (msg.type === "tick") {
-        client.processTick(msg.simTime);
-      } else {
-        throw new Error(`Unexpected message type: ${msg.type}`);
-      }
-    };
-
-    channel.onclose = () => {
-      client.recvMsg({ type: "disconnected", simTime: client.simTime });
-      client.processTick(client.simTime + tickPeriodMs);
-    };
-
-    channel.onerror = (e) => {
-      console.error(e);
-      client.recvMsg({ type: "disconnected", simTime: client.simTime });
-      client.processTick(client.simTime + tickPeriodMs);
-    };
-
-    return { client, clientId, state };
-  }
+export async function channelSend(channel, msg, msgType) {
+  channel.send(JSON.stringify({ type: msgType, ...msg }));
 }
 
 /**
  * @template S, E
- * @typedef {Object} ServerCallbacks
- * @property {function(void): S} getState
+ * @template {Message<S, E>["type"]} T
+ * @param {RTCDataChannel} channel
+ * @param {T} msgType
+ * @returns {Promise<Extract<Message<S, E>, { type: T }>>}
  */
+export async function channelRecv(channel, msgType) {
+  const msg = await new Promise((resolve, reject) => {
+    channel.onmessage = resolve;
+    channel.onerror = reject;
+    channel.onclose = reject;
+  });
+  const parsedMsg = JSON.parse(msg.data);
 
-/**
- * @template T
- * @param {T[]} arr
- * @param {(x: T) => boolean} predicate
- * @returns {T[]}
- */
-function shiftWhile(arr, predicate) {
-  let removedElements = [];
-  while (arr.length > 0 && predicate(arr[0])) {
-    // The shift can't fail as we've just checked for a non-zero array length
-    removedElements.push(/** @type {T} */ (arr.shift()));
-  }
-  return removedElements;
-}
-
-/**
- * @template S, E
- * @extends EventChunker<E>
- */
-export class Server extends EventChunker {
-  /**
-   * @memberof Server
-   * @param {string} token
-   * @param {() => void} stop
-   * @param {ServerCallbacks<S, E>} callbacks
-   */
-  constructor(token, stop, callbacks, now = performance.now()) {
-    super({
-      simTime: 0,
-      tickPeriodMs: 50,
-      timeChunkMs: 10,
-      now,
-    });
-    /** @type {{ [key: string]: RTCDataChannel }} */
-    this.clients = {};
-    this.token = token;
-    this.stop = stop;
-    this.callbacks = callbacks;
-    this.clientId = randomString(12);
-    this.tickTimer = setInterval(() => {
-      const nextTickTime = this.simTime + this.tickPeriodMs;
-      this.broadcast({ type: "tick", simTime: nextTickTime });
-      this.processTick(nextTickTime);
-    }, this.tickPeriodMs);
-  }
-  /**
-   * This is use for sending both client events and server events
-   *
-   * @param {E} peerEvent
-   */
-  sendEvent(peerEvent) {
-    this.sendClientEvent(this.clientId, peerEvent);
+  if (parsedMsg.type !== msgType) {
+    throw new Error(`Expected ${msgType}, got ${parsedMsg.type}`);
   }
 
-  /**
-   * @param {string} clientId
-   * @param {E} peerEvent
-   */
-  sendClientEvent(clientId, peerEvent) {
-    /** @type {PeerMessage<E>} */
-    const msg = {
-      type: "peerEvent",
-      clientId: clientId,
-      simTime: this.simTime,
-      peerEvent,
-    };
-    this.broadcast({
-      type: "peerMessage",
-      msg,
-    });
-  }
-  /** @param {Message<S, E>} msg */
-  broadcast(msg) {
-    // TODO note this doesn't send to the message to ourselves!
-    const data = JSON.stringify(msg);
-    for (let clientId of Object.keys(this.clients)) {
-      this.clients[clientId].send(data);
-    }
-    if (msg.type === "peerMessage") {
-      this.recvMsg(msg.msg);
-    }
-  }
-  /** @param {RTCDataChannel} channel */
-  onConnect(channel) {
-    let clientId = randomString(12);
-    this.clients[clientId] = channel;
-    channel.onclose = () => {
-      console.log("client disconnected", clientId);
-      this.onDisconnect(clientId);
-    };
-    channel.onerror = (e) => {
-      console.error(e);
-      this.onDisconnect(clientId);
-    };
-    channel.onmessage = (e) => {
-      // TODO handle parse failure here (and other places)
-      const peerEvent = JSON.parse(e.data);
-      this.sendClientEvent(clientId, peerEvent);
-    };
-
-    let state = this.callbacks.getState();
-    channel.send(
-      JSON.stringify({
-        type: "connected",
-        clientId,
-        simTime: this.simTime,
-        tickPeriodMs: this.tickPeriodMs,
-        timeChunkMs: this.timeChunkMs,
-        state,
-      })
-    );
-    this.broadcast({
-      type: "peerMessage",
-      msg: {
-        type: "peerJoined",
-        clientId,
-        simTime: this.simTime,
-      },
-    });
-  }
-
-  /** @param {string} clientId */
-  onDisconnect(clientId) {
-    this.clients[clientId].close();
-    delete this.clients[clientId];
-
-    this.broadcast({
-      type: "peerMessage",
-      msg: {
-        type: "peerLeft",
-        clientId,
-        simTime: this.simTime,
-      },
-    });
-  }
-  getToken() {
-    return this.token;
-  }
-  /**
-   * @template S, E
-   * @param {ServerCallbacks<S, E>} serverCallbacks
-   */
-  static async init(serverCallbacks) {
-    let { token, start: startListen } = await listen();
-
-    const start = async () => {
-      /** @param {RTCDataChannel} channel */
-      const onConnect = (channel) => {
-        server.onConnect(channel);
-      };
-      let { stop } = await startListen({ onConnect });
-      let server = new Server(token, stop, serverCallbacks);
-      /** @type {PeerMessage<E>} */
-      const joinMsg = {
-        type: "peerJoined",
-        clientId: server.clientId,
-        simTime: server.simTime,
-      };
-      server.recvMsg(joinMsg);
-      // server.sendEvent(joinMsg);
-      return { token, server };
-    };
-    return { token, start };
-  }
+  return parsedMsg;
 }

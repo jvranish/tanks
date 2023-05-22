@@ -1,5 +1,5 @@
-import { WaitingList } from "./signaling-service/waiting-list.js";
-import * as OneshotExchange from "./signaling-service/oneshot-exchange.js";
+import { WaitingList } from "../signaling-service/waiting-list.js";
+import * as OneshotExchange from "../signaling-service/oneshot-exchange.js";
 import { startOffer, answerOffer } from "./webrtc.js";
 
 /** @param {string} token */
@@ -20,7 +20,7 @@ export async function listen() {
 
   /**
    * @param {{
-   *   onConnect: (channel: RTCDataChannel) => void;
+   *   onConnect: (channel: RTCDataChannel) => Promise<void>;
    *   onError?: (token: string, error: any) => void;
    *   checkPeriod?: number;
    * }} callbacks

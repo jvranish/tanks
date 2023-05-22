@@ -63,6 +63,22 @@ export function assertEq(a, b) {
 }
 
 /**
+ * Deep compares (using the dump json stringify method) two values and asserts
+ * if they are not equal
+ *
+ * @template T
+ * @param {T} a
+ * @param {T} b
+ */
+export function assertDeepEq(a, b) {
+  if (JSON.stringify(a) !== JSON.stringify(b)) {
+    const errorMsg = `Expected ${a} to deep equal ${b}`;
+    console.error(errorMsg, a, b);
+    throw new AssertError(errorMsg);
+  }
+}
+
+/**
  * @param {() => void} fn
  * @param {(e: unknown) => void} test
  */

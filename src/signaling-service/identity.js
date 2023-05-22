@@ -51,13 +51,18 @@ export class PublicIdentity {
     const array = new Uint8Array(32);
     self.crypto.getRandomValues(array);
     const challenge = bufferToBase64(array);
-    const verify = async (/** @type {string} */ signature) => {
-      const valid = await this.verify(challenge, signature);
-      if (!valid) {
-        throw new Error("Could not validate public key signature");
-      }
-    }
+    const verify = async (/** @type {string} */ signature) =>
+      await this.verify(challenge, signature);
     return { challenge, verify };
+  }
+
+  toJSON() {
+    return { publicKey: bufferToBase64(this.rawKey) };
+  }
+
+  /** @param {{ publicKey: string }} s */
+  static fromJSON({ publicKey }) {
+    return new PublicIdentity(publicKey);
   }
 
   async toName() {
@@ -76,9 +81,7 @@ export class PublicIdentity {
       this.rawKey,
       { name: "ECDSA", namedCurve: "P-256" },
       true,
-      [
-        "verify",
-      ]
+      ["verify"]
     );
     return await window.crypto.subtle.verify(
       {
