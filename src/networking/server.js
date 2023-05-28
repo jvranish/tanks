@@ -1,5 +1,4 @@
 import { PublicIdentity } from "../crypto/identity.js";
-import { randomString } from "../signaling-service/util.js";
 import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-event-queue.js";
 
 /**
@@ -27,7 +26,7 @@ export class Server extends TimeChunkedEventQueue {
     /** @type {{ [key: string]: RTCDataChannel }} */
     this.clients = {};
     this.callbacks = callbacks;
-    this.clientId = randomString(16);
+    this.clientId = "host";
     this.tickTimer = setInterval(() => {
       this.onTick();
     }, this.tickPeriodMs);
