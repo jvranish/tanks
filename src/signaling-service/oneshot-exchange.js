@@ -1,4 +1,3 @@
-import { assertEq } from "../../test/test-helpers.js";
 import { KVStore } from "./kv-store.js";
 
 /**

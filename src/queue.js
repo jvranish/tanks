@@ -38,6 +38,7 @@ export class Queue {
   }
 
   /**
+   * Synchronously drain the queue, calling `f` on each element.
    * @param {(value: T) => void} f
    */
   drain(f) {

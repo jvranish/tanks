@@ -1,4 +1,4 @@
-import { PublicIdentity } from "../signaling-service/identity.js";
+import { PublicIdentity } from "../crypto/identity.js";
 import { randomString } from "../signaling-service/util.js";
 import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-event-queue.js";
 

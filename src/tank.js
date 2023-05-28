@@ -13,7 +13,7 @@
  */
 
 import { dispatch } from "./app.js";
-import { CanvasWrapper } from "./canvas.js";
+import { ResponsiveCanvasElement } from "./canvas.js";
 import { PCG32 } from "./pcg.js";
 import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
 
@@ -49,7 +49,7 @@ export function TankGameHandlers(state, network) {
   /** @param {CustomEvent} e */
   const onframe = (e) => {
     const { time } = e.detail;
-    if (!(e.target instanceof CanvasWrapper)) {
+    if (!(e.target instanceof ResponsiveCanvasElement)) {
       throw new Error("not a canvas wrapper");
     }
     const canvas = e.target?.canvas;

@@ -1,5 +1,5 @@
 import { assert, assertEq, describe, it } from "../../test/test-helpers.js";
-import { AESKey } from "./aes.js";
+import { AESKey } from "../crypto/aes.js";
 import { KVStore } from "./kv-store.js";
 import { fromToken, start } from "./oneshot-exchange.js";
 import { WaitingList } from "./waiting-list.js";

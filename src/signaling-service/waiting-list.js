@@ -1,5 +1,4 @@
 import { KVStore } from "./kv-store.js";
-import { assert, assertEq } from "../../test/test-helpers.js";
 
 /** @typedef {"connecting" | "waiting" | undefined} ConnectState */
 

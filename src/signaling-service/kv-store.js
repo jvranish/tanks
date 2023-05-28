@@ -1,4 +1,4 @@
-import { AESKey } from "./aes.js";
+import { AESKey } from "../crypto/aes.js";
 import { ETagMismatchError, KVError, TimeoutError } from "./error.js";
 import { wait, bufferToHex, hexToBuffer, randomString } from "./util.js";
 

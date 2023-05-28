@@ -1,4 +1,4 @@
-import { Identity } from "../signaling-service/identity.js";
+import { Identity } from "../crypto/identity.js";
 import { TimeChunkedEventQueue, channelRecv, channelSend } from "./time-chunked-event-queue.js";
 
 

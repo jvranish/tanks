@@ -1,6 +1,6 @@
 // TODO fix dumb name
 
-export class CanvasWrapper extends HTMLElement {
+export class ResponsiveCanvasElement extends HTMLElement {
   constructor() {
     super();
     this.handle = undefined;
@@ -16,6 +16,8 @@ export class CanvasWrapper extends HTMLElement {
   connectedCallback() {
     this.tabIndex = 0;
     this.focus();
+    // fixes performance issue on safari
+    this.style.outline = "none";
     this.resizeObserver.observe(this);
     /** @param {number} time */
     const render = (time) => {
@@ -36,4 +38,4 @@ export class CanvasWrapper extends HTMLElement {
   }
 }
 
-customElements.define("canvas-wrapper", CanvasWrapper);
+customElements.define("responsive-canvas", ResponsiveCanvasElement);

@@ -119,10 +119,6 @@ onTick(events?) onJoin onLeft onEvent
 */
 // TODO process events with an interval timer instead of on frame?
 
-import { Identity, PublicIdentity } from "../signaling-service/identity.js";
-import { randomString } from "../signaling-service/util.js";
-import { connect, listen } from "../webrtc/webrtc-sockets.js";
-
 // TODO add a sendObj to Channel?
 
 // TODO add queue for events, and a chunking method
@@ -214,6 +210,8 @@ export class TimeChunkedEventQueue {
   /** @param {E} peerEvent */
   sendEvent(peerEvent) {}
 
+
+  // TODO pull process tick into part of recvMsg
   /** @param {number} simTime */
   processTick(simTime) {
     // Local simTime is always incremented timeChunkMs at a time.
