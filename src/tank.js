@@ -13,9 +13,9 @@
  */
 
 import { dispatch } from "./app.js";
-import { ResponsiveCanvasElement } from "./canvas.js";
-import { PCG32 } from "./pcg.js";
-import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
+import { ResponsiveCanvasElement } from "../lib/canvas.js";
+import { PCG32 } from "../lib/pcg.js";
+import { TimeChunkedEventQueue } from "../lib/networking/time-chunked-event-queue.js";
 
 /** @param {string} str */
 function fletcher32(str) {
@@ -327,7 +327,7 @@ export class GameState {
    * @param {{
    *   simTime: number;
    *   dt: number;
-   *   peerEvents: import("./networking/time-chunked-event-queue.js").PeerMessage<TankAction>[];
+   *   peerEvents: import("../lib/networking/time-chunked-event-queue").PeerMessage<TankAction>[];
    * }} chunk
    */
   processChunk(chunk) {

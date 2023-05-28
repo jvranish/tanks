@@ -1,11 +1,11 @@
 import { parse } from "../lib/hyperlit.js";
 import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
-import { Client } from "./networking/client.js";
-import { Server } from "./networking/server.js";
-import { TimeChunkedEventQueue } from "./networking/time-chunked-event-queue.js";
+import { Client } from "../lib/networking/client.js";
+import { Server } from "../lib/networking/server.js";
+import { TimeChunkedEventQueue } from "../lib/networking/time-chunked-event-queue.js";
 import { GameState, TankGameHandlers } from "./tank.js";
-import { connect, listen } from "./webrtc/webrtc-sockets.js";
+import { connect, listen } from "../lib/webrtc/webrtc-sockets.js";
 
 const html = parse({ h, text });
 
