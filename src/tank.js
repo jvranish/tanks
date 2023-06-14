@@ -15,7 +15,13 @@
 import { dispatch } from "./app.js";
 import { ResponsiveCanvasElement } from "../lib/canvas.js";
 import { PCG32 } from "../lib/pcg.js";
-import { TimeChunkedEventQueue } from "../lib/networking/time-chunked-event-queue.js";
+
+/** @typedef {import("../lib/networking/simulation.js").SimulationClient<TankAction>} SimulationClient */
+
+/**
+ * @template E
+ * @typedef {import("../lib/networking/simulation.js").SimChunk<E>} SimChunk<E>
+ */
 
 /** @param {string} str */
 function fletcher32(str) {
@@ -42,7 +48,7 @@ function fletcher32(str) {
 
 /**
  * @param {GameState} state
- * @param {TimeChunkedEventQueue<TankAction>} network
+ * @param {SimulationClient} network
  */
 export function TankGameHandlers(state, network) {
   let lastSimTime = 0;
@@ -58,24 +64,25 @@ export function TankGameHandlers(state, network) {
       throw new Error("no context");
     }
 
-    for (const chunk of network.getEvents()) {
-      state.processChunk(chunk);
-      // every 10 seconds of sim time, print out the state
-      const { simTime } = chunk;
-      if (simTime > lastSimTime + 10000) {
-        console.log("state at sim time", simTime, lastSimTime);
-        // round to the nearest 10 seconds
-        lastSimTime = Math.round(simTime / 10000) * 10000;
-        console.log(state);
-        console.log("state hash", fletcher32(JSON.stringify(state)));
+    const chunks = network.getEvents();
+    if (chunks) {
+      for (const chunk of chunks) {
+        state.processChunk(chunk);
+        // every 10 seconds of sim time, print out the state
+        const { simTime } = chunk;
+        if (simTime > lastSimTime + 10000) {
+          console.log("state at sim time", simTime, lastSimTime);
+          // round to the nearest 10 seconds
+          lastSimTime = Math.round(simTime / 10000) * 10000;
+          console.log(state);
+          console.log("state hash", fletcher32(JSON.stringify(state)));
+        }
       }
-
-      if (chunk.peerEvents.some((msg) => msg.type === "disconnected")) {
-        console.log("disconnected!");
-        dispatch((uiState) => {
-          uiState.errorMenu("Host disconnected");
-        });
-      }
+    } else {
+      console.log("disconnected!");
+      dispatch((uiState) => {
+        uiState.errorMenu("Host disconnected");
+      });
     }
 
     draw(state, ctx);
@@ -323,17 +330,11 @@ export class GameState {
     }
   }
 
-  /**
-   * @param {{
-   *   simTime: number;
-   *   dt: number;
-   *   peerEvents: import("../lib/networking/time-chunked-event-queue").PeerMessage<TankAction>[];
-   * }} chunk
-   */
+  /** @param {SimChunk<TankAction>} chunk */
   processChunk(chunk) {
     const { peerEvents, dt } = chunk;
     for (const event of peerEvents) {
-      switch (event.type) {
+      switch (event.msg.type) {
         case "peerJoined":
           this.addTank(event.clientId);
           break;
@@ -341,9 +342,9 @@ export class GameState {
           this.removeTank(event.clientId);
           break;
         case "peerEvent":
-          this.tanks[event.clientId].moving = event.peerEvent.move;
-          this.tanks[event.clientId].turning = event.peerEvent.turn;
-          this.tanks[event.clientId].isFiring = event.peerEvent.fire;
+          this.tanks[event.clientId].moving = event.msg.peerEvent.move;
+          this.tanks[event.clientId].turning = event.msg.peerEvent.turn;
+          this.tanks[event.clientId].isFiring = event.msg.peerEvent.fire;
           break;
       }
     }

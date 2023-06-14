@@ -3,13 +3,13 @@ import { h, text, patch } from "../lib/hyperapp-mini.js";
 import { mini } from "../lib/mini.js";
 import { Client } from "../lib/networking/client.js";
 import { Server } from "../lib/networking/server.js";
-import { TimeChunkedEventQueue } from "../lib/networking/time-chunked-event-queue.js";
 import { GameState, TankGameHandlers } from "./tank.js";
 import { connect, listen } from "../lib/webrtc/webrtc-sockets.js";
 
 const html = parse({ h, text });
 
 /** @typedef {import("./tank.js").TankAction} TankAction */
+/** @typedef {import("./tank.js").SimulationClient} SimulationClient */
 
 /**
  * @typedef {| { state: "connecting"; token: string }
@@ -26,7 +26,7 @@ const html = parse({ h, text });
  *     }
  *   | { state: "starting-host" }
  *   | { state: "joining-game" }
- *   | { state: "connected"; network: TimeChunkedEventQueue<TankAction> }
+ *   | { state: "connected"; network: SimulationClient }
  *   | { state: "error"; errorMessage: string }} UiState
  */
 
@@ -80,7 +80,7 @@ class State {
     this.uiState = { state: "joining-game" };
   }
 
-  /** @param {TimeChunkedEventQueue<TankAction>} network */
+  /** @param {SimulationClient} network */
   connected(network) {
     this.uiState = { state: "connected", network };
   }
@@ -141,7 +141,7 @@ const StartHostGame = asyncEventHandler(async (event, state) => {
   try {
     const { token, start: startListen } = await listen();
     const start = async () => {
-      const server = new Server({ getState: getGameState });
+      const server = Server.init({ getState: getGameState });
       const { stop } = await startListen({
         onConnect: (channel) => server.onConnect(channel),
       });
@@ -204,10 +204,10 @@ const UpdateJoinToken = eventHandler((event, state) => {
   }
 });
 
-/** @param {{ network: TimeChunkedEventQueue<TankAction> }} props */
+/** @param {{ network: SimulationClient }} props */
 function InGame({ network }) {
   return html`
-    <canvas-wrapper ${TankGameHandlers(gameState, network)}></canvas-wrapper>
+    <responsive-canvas ${TankGameHandlers(gameState, network)}></responsive-canvas>
   `;
 }
 
