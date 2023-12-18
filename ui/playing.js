@@ -1,62 +1,75 @@
-import { render, html } from "../not-react.js";
+import {
+  render,
+  html,
+  findElements,
+} from "../lib/not-react-redux/not-react.js";
 import { dispatch } from "../app.js";
 import { ResponsiveCanvasElement } from "../lib/responsive-canvas/responsive-canvas.js";
-import { validateInstanceOf } from "../utils.js";
 import { keyHandlers } from "../tank/input.js";
 import { renderScoreboard } from "./scoreboard.js";
-import { transition_error } from "./ui-state.js";
+import { transitionError } from "./ui-state.js";
 import { onFrame } from "../tank/onFrame.js";
 
-/** @param {import("./ui-state.js").PlayingState} state */
-export function Playing(state) {
+/**
+ * @param {HTMLElement} element
+ * @param {import("./ui-state.js").PlayingState} state
+ */
+export function renderPlaying(element, state) {
   const joinLink = state.joinLink;
-  const node = render(html`
-    <responsive-canvas id="canvas"></responsive-canvas>
-    <button class="settings-btn" id="settingsButton" title="Settings">
-      ⚙️
-    </button>
+  const node = render(
+    element,
+    html`
+      <responsive-canvas id="canvas"></responsive-canvas>
+      <button class="settings-btn" id="settingsButton" title="Settings">
+        ⚙️
+      </button>
 
-    <div id="scoreboard" class="scoreboard"></div>
+      <div id="scoreboard" class="scoreboard"></div>
 
-    <dialog id="settingsDialog">
-      <label
-        >Controls:
-        <ul>
-          <li>Arrow keys to move</li>
-          <li>Space to shoot</li>
-          <li>'A' and 'D' to rotate turret</li>
-        </ul>
-      </label>
-
-      <form id="settingsForm" method="dialog">
+      <dialog id="settingsDialog">
         <label
-          >Player Name:
-          <input
-            autofocus
-            type="text"
-            id="playerName"
-            placeholder="Enter your player name"
-        /></label>
-        ${joinLink !== ""
-          ? html`<label
-              >Join Link:
-              <div class="flex-row">
-                <input type="text" id="joinLink" value="${joinLink}" readonly />
-                <button type="button" id="copyButton" title="Copy to Clipboard">
-                  📋
-                </button>
-              </div>
-            </label>`
-          : html``}
-        <button id="backButton">Back</button>
-      </form>
-    </dialog>
-  `);
+          >Controls:
+          <ul>
+            <li>Arrow keys to move</li>
+            <li>Space to shoot</li>
+            <li>'A' and 'D' to rotate turret</li>
+          </ul>
+        </label>
 
-  const settingsDialog = validateInstanceOf(
-    node.querySelector("#settingsDialog"),
-    HTMLDialogElement
+        <form method="dialog">
+          <label
+            >Player Name:
+            <input
+              autofocus
+              type="text"
+              id="playerName"
+              placeholder="Enter your player name"
+          /></label>
+          <label style="display: ${joinLink !== "" ? "block" : "none"};">
+            Join Link:
+            <div class="flex-row">
+              <input type="text" value="${joinLink}" readonly />
+              <button type="button" id="copyButton" title="Copy to Clipboard">
+                📋
+              </button>
+            </div>
+          </label>
+          <button>Back</button>
+        </form>
+      </dialog>
+    `
   );
+
+  const elements = findElements(node, {
+    playerName: HTMLInputElement,
+    copyButton: HTMLButtonElement,
+    settingsButton: HTMLButtonElement,
+    settingsDialog: HTMLDialogElement,
+    canvas: ResponsiveCanvasElement,
+    scoreboard: HTMLDivElement,
+  });
+
+  const { settingsDialog, scoreboard, canvas } = elements;
 
   const toggleDialog = () => {
     if (settingsDialog.open) {
@@ -67,66 +80,60 @@ export function Playing(state) {
   };
 
   // escape key toggles the settings dialog
-  window.addEventListener("keydown", (e) => {
+  node.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       toggleDialog();
       e.preventDefault();
     }
   });
 
-  node.querySelector("#settingsButton")?.addEventListener("click", () => {
-    toggleDialog();
-  });
+  elements.settingsButton.addEventListener("click", toggleDialog);
 
-  node.querySelector("#copyButton")?.addEventListener("click", () => {
+  elements.copyButton.addEventListener("click", () => {
     navigator.clipboard.writeText(joinLink);
   });
 
-  node.querySelector("#playerName")?.addEventListener("blur", (e) => {
-    const input = validateInstanceOf(e.target, HTMLInputElement);
+  const playerName = localStorage.getItem("playerName");
+  if (playerName) {
+    state.networkedGame.sendEvent({
+      type: "setPlayerName",
+      playerName,
+    });
+  }
 
+  elements.playerName.addEventListener("blur", function (e) {
     // set player name in Local Storage
-    localStorage.setItem("playerName", input.value);
+    localStorage.setItem("playerName", this.value);
 
     state.networkedGame.sendEvent({
       type: "setPlayerName",
-      playerName: input.value,
+      playerName: this.value,
     });
   });
-
-  const responsiveCanvas = validateInstanceOf(
-    node.querySelector("#canvas"),
-    ResponsiveCanvasElement
-  );
-
-  const scoreboard = validateInstanceOf(
-    node.querySelector("#scoreboard"),
-    HTMLDivElement
-  );
 
   state.networkedGame.addWatcher(
     () => JSON.stringify(state.gameState.scores),
     (_prev, _next) => {
-      renderScoreboard(state.gameState, scoreboard);
+      renderScoreboard(scoreboard, state.gameState);
     }
   );
-  renderScoreboard(state.gameState, scoreboard);
+  renderScoreboard(scoreboard, state.gameState);
 
   state.networkedGame.addWatcher(
     () => state.gameState.scores[state.networkedGame.clientId]?.playerName,
     (_prev, next) => {
-      node.querySelector("#playerName")?.setAttribute("value", next);
+      elements.playerName.setAttribute("value", next);
     }
   );
 
-  responsiveCanvas.onFrame((e) => {
+  canvas.onFrame((e) => {
     const { context, time } = e.detail;
 
     const { disconnected, timeSinceLastUpdate, outputEvents } =
       state.networkedGame.update(time);
 
     if (disconnected) {
-      dispatch(transition_error("Disconnected from game"));
+      dispatch(transitionError("Disconnected from game"));
     } else {
       onFrame(
         timeSinceLastUpdate,
@@ -142,7 +149,7 @@ export function Playing(state) {
     state.networkedGame.sendEvent(event);
   });
 
-  responsiveCanvas.addEventListener("keydown", onkeydown);
+  canvas.addEventListener("keydown", onkeydown);
 
-  responsiveCanvas.addEventListener("keyup", onkeyup);
+  canvas.addEventListener("keyup", onkeyup);
 }

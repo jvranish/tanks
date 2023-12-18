@@ -31,6 +31,12 @@ async function loadAudio(src) {
   });
 }
 
+export function loadAudioAssets() {
+  const explodeSoundPromise = loadAudio("./assets/explode.wav");
+  const shootSoundPromise = loadAudio("./assets/shoot.wav");
+  return { explodeSoundPromise, shootSoundPromise };
+}
+
 export async function loadAssets() {
   // Initiate all image and audio loading without awaiting immediately
   const flashFrames = [
@@ -66,8 +72,7 @@ export async function loadAssets() {
 
   const hullImagePromise = loadImage("./assets/Hull_02.png");
   const turretImagePromise = loadImage("./assets/Gun_01.png");
-  const explodeSoundPromise = loadAudio("./assets/explode.wav");
-  const shootSoundPromise = loadAudio("./assets/shoot.wav");
+  const { explodeSoundPromise, shootSoundPromise } = loadAudioAssets();
 
   // Await all promises
   const [hullImage, turretImage, groundTrackImage, explodeSound, shootSound] =
@@ -103,4 +108,3 @@ export async function loadAssets() {
     shootSound,
   };
 }
-

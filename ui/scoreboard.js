@@ -1,12 +1,13 @@
-import { render, html } from "../not-react.js";
+import { render, html } from "../lib/not-react-redux/not-react.js";
 import { GameState } from "../tank/game-state.js";
 
 /**
- * @param {GameState} gameState
  * @param {HTMLElement} element
+ * @param {GameState} gameState
  */
-export function renderScoreboard(gameState, element) {
+export function renderScoreboard(element, gameState) {
   render(
+    element,
     Object.values(gameState.scores)
       .map(
         ({ playerName, score }) => html`
@@ -16,7 +17,6 @@ export function renderScoreboard(gameState, element) {
           </div>
         `
       )
-      .join(""),
-    element
+      .join("")
   );
 }
