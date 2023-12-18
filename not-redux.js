@@ -7,8 +7,8 @@ export function createStore(state, onStateChange) {
   let busy = false;
   /** @param {(state: S) => S | void} f */
   const dispatch = (f) => {
+
     state = f(state) || state;
-    console.log("dispatch", state);
     if (!busy) {
       busy = true;
       requestAnimationFrame((time) => {

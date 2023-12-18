@@ -13,6 +13,8 @@ import { loadAssets } from "./assets.js";
  * @property {boolean} dead - Whether the tank is dead.
  * @property {number} deadAt - The time the tank died.
  * @property {TankInput} input - The input state of the tank.
+ * @property {number} distanceTraveledSinceLastGroundTrack - The distance
+ *   traveled since the last ground track.
  */
 
 /**
@@ -47,14 +49,14 @@ import { loadAssets } from "./assets.js";
  * }} SetPlayerNameEvent
  */
 
-/** @typedef {TankEvent | SetPlayerNameEvent} GameEvent */
-/** @typedef {{ type: "shoot" } | { type: "died" }} StateEvent */
+/** @typedef {TankEvent | SetPlayerNameEvent} GameInputEvent */
+/** @typedef {{ type: "shoot" } | { type: "died" }} GameOutputEvent */
 
 export class GameState {
-  /**
-   * @param {Awaited<ReturnType<typeof loadAssets>>} assets
-   */
+  /** @param {Awaited<ReturnType<typeof loadAssets>>} assets */
   constructor(assets) {
+    /** @type {GameOutputEvent[]} */
+    this.outputEvents = [];
     /** @type {{ [id: string]: Tank }} */
     this.tanks = {};
     /** @type {Bullet[]} */
@@ -75,11 +77,12 @@ export class GameState {
     this.tankSpeed = 100;
     this.tankRotationSpeed = 3;
     this.tankTurretRotationSpeed = 3;
-
+    /** @type {{ pos: Vector2D; rotation: number; time: number }[]} */
+    this.groundTracks = [];
     this.assets = assets;
   }
 
-  static async init() { 
+  static async init() {
     const assets = await loadAssets();
     return new GameState(assets);
   }
@@ -200,6 +203,8 @@ export class GameState {
         turningTurret: 0, // -1 for left, 1 for right
         moving: 0, // -1 for backward, 1 for forward
       },
+      distanceTraveledSinceLastGroundTrack:
+        this.assets.tankAttributes.groundTrackStep,
     };
     this.tanks[id] = tank;
     if (!this.scores[id]) {
@@ -249,27 +254,30 @@ export class GameState {
   /**
    * @param {Tank} tank
    * @param {string} killedBy
-   * @param {(event: StateEvent) => void} onStateEvent
    */
-  killTank(tank, killedBy, onStateEvent) {
+  killTank(tank, killedBy) {
     // increment the score of the killer
     this.scores[killedBy].score += 1;
     // mark the tank dead
     tank.dead = true;
     tank.deadAt = this.time;
     // fire an event
-    onStateEvent({ type: "died" });
+    this.GameOutputEvent({ type: "died" });
   }
 
-  /**
-   * @param {Tank} tank
-   * @param {(event: StateEvent) => void} onStateEvent
-   */
-  fireBullet(tank, onStateEvent) {
+  /** @param {Tank} tank */
+  fireBullet(tank) {
     const startPosition = {
-      x: tank.position.x + Math.cos(tank.rotation) * -20,
-      y: tank.position.y + Math.sin(tank.rotation) * -20,
+      x:
+        tank.position.x +
+        Math.cos(tank.rotation) *
+          -(this.assets.tankAttributes.turretPivotOffset / 2),
+      y:
+        tank.position.y +
+        Math.sin(tank.rotation) *
+          -(this.assets.tankAttributes.turretPivotOffset / 2),
     };
+
     this.bullets.push({
       firingTankId: tank.id,
       position: { x: startPosition.x, y: startPosition.y },
@@ -282,7 +290,7 @@ export class GameState {
         y: Math.sin(tank.rotation + tank.turretRotation) * this.bulletVelocity,
       },
     });
-    onStateEvent({ type: "shoot" });
+    this.GameOutputEvent({ type: "shoot" });
   }
 
   /** @param {Bullet} bullet */
@@ -293,9 +301,8 @@ export class GameState {
   /**
    * @param {Tank} tank
    * @param {number} dt - The time delta.
-   * @param {(event: StateEvent) => void} onStateEvent
    */
-  updateTank(tank, dt, onStateEvent) {
+  updateTank(tank, dt) {
     // if the tank is dead
     if (tank.dead) {
       // if the tank has been dead for more than the respawn time
@@ -316,25 +323,55 @@ export class GameState {
     tank.position.y +=
       tank.input.moving * Math.sin(tank.rotation) * this.tankSpeed * dt;
 
+    if (tank.input.moving != 0) {
+      if (
+        tank.distanceTraveledSinceLastGroundTrack >
+        this.assets.tankAttributes.groundTrackStep
+      ) {
+        // reset the distance traveled, and add a ground track
+        tank.distanceTraveledSinceLastGroundTrack = 0;
+        this.groundTracks.push({
+          pos: {
+            x:
+              tank.position.x +
+              Math.cos(tank.rotation) *
+                -this.assets.tankAttributes.groundTrackOffset,
+            y:
+              tank.position.y +
+              Math.sin(tank.rotation) *
+                -this.assets.tankAttributes.groundTrackOffset,
+          },
+          rotation: tank.rotation,
+          time: this.time,
+        });
+        // if groundTracks is too long, remove the oldest one
+        if (this.groundTracks.length > 200) {
+          this.groundTracks.shift();
+        }
+      }
+
+      // update the distance traveled
+      tank.distanceTraveledSinceLastGroundTrack += this.tankSpeed * dt;
+    }
+
     // check if the tank is hit by a bullet
     for (const bullet of this.bullets) {
       if (this.tankHit(tank, bullet)) {
         // remove the bullet
         this.removeBullet(bullet);
         // kill the tank
-        this.killTank(tank, bullet.firingTankId, onStateEvent);
+        this.killTank(tank, bullet.firingTankId);
       }
     }
 
-    this.updateFireBullet(tank, dt, onStateEvent);
+    this.updateFireBullet(tank, dt);
   }
 
   /**
    * @param {Tank} tank
    * @param {number} dt - The time delta.
-   * @param {(event: StateEvent) => void} onStateEvent
    */
-  updateFireBullet(tank, dt, onStateEvent) {
+  updateFireBullet(tank, dt) {
     // update the cooldown based on the time
     if (tank.fireCooldown > 0) {
       tank.fireCooldown -= dt;
@@ -342,7 +379,7 @@ export class GameState {
 
     // fire a bullet
     if (tank.input.isFiring && tank.fireCooldown <= 0) {
-      this.fireBullet(tank, onStateEvent);
+      this.fireBullet(tank);
       tank.fireCooldown = this.coolDownTime;
     }
   }
@@ -374,18 +411,22 @@ export class GameState {
     }
   }
 
-  /**
-   * @param {number} dt
-   * @param {(event: StateEvent) => void} onStateEvent
-   */
-  update(dt, onStateEvent) {
+  /** @param {number} dt */
+  update(dt) {
     this.time += dt;
     for (const tank of Object.values(this.tanks)) {
-      this.updateTank(tank, dt, onStateEvent);
+      this.updateTank(tank, dt);
     }
     for (const bullet of this.bullets) {
       this.updateBullet(bullet, dt);
     }
+    // empty the output events array, and return the contents
+    return this.outputEvents.splice(0);
+  }
+
+  /** @param {GameOutputEvent} GameOutputEvent */
+  GameOutputEvent(GameOutputEvent) {
+    this.outputEvents.push(GameOutputEvent);
   }
 
   /** @param {string} clientId */
@@ -400,16 +441,17 @@ export class GameState {
 
   /**
    * @param {string} clientId
-   * @param {GameEvent} peerEvent
-   * @param {(event: StateEvent) => void} onStateEvent
+   * @param {GameInputEvent} peerEvent
    */
-  onEvent(clientId, peerEvent, onStateEvent) {
+  onEvent(clientId, peerEvent) {
     if (peerEvent.type === "setPlayerName") {
       this.scores[clientId].playerName = peerEvent.playerName;
     } else if (peerEvent.type === "tank") {
+      // this is here so that even if the space key is pressed only for a short
+      // time, we still fire the bullet
       this.tanks[clientId].input = peerEvent.input;
       for (const tank of Object.values(this.tanks)) {
-        this.updateFireBullet(tank, 0, onStateEvent);
+        this.updateFireBullet(tank, 0);
       }
     }
   }

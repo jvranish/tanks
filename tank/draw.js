@@ -10,42 +10,42 @@ import { PCG32 } from "../lib/pcg/pcg.js";
  *   clientId: string;
  *   state: GameState;
  *   timeSinceLastUpdate: number;
- *   ctx: CanvasRenderingContext2D;
+ *   context: CanvasRenderingContext2D;
  * }} DrawParams
  */
 
 /**
  * @param {HTMLImageElement} image
- * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasRenderingContext2D} context
  */
-function drawCentered(image, ctx) {
-  ctx.drawImage(image, -image.width / 2, -image.height / 2);
+function drawCentered(image, context) {
+  context.drawImage(image, -image.width / 2, -image.height / 2);
 }
 
 /**
  * @param {{ frameTime: number; frames: HTMLImageElement[] }} animation
  * @param {number} t
- * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasRenderingContext2D} context
  */
-function drawAnimationFrame(animation, t, ctx) {
+function drawAnimationFrame(animation, t, context) {
   const frameIndex = Math.floor(t / animation.frameTime);
   if (frameIndex < 0 || frameIndex >= animation.frames.length) {
     return;
   }
   const frame = animation.frames[frameIndex];
-  drawCentered(frame, ctx);
+  drawCentered(frame, context);
 }
 
 /**
  * @param {{ frameTime: number; frames: HTMLImageElement[] }} animation
  * @param {number} t
- * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasRenderingContext2D} context
  * @param {number} startFrame
  */
-function drawLoopedAnimation(animation, t, ctx, startFrame = 0) {
+function drawLoopedAnimation(animation, t, context, startFrame = 0) {
   const frameIndex = Math.floor(t / animation.frameTime) + startFrame;
   const frame = animation.frames[frameIndex % animation.frames.length];
-  drawCentered(frame, ctx);
+  drawCentered(frame, context);
 }
 
 /**
@@ -55,7 +55,7 @@ function drawLoopedAnimation(animation, t, ctx, startFrame = 0) {
  * @param {Tank} tank
  */
 function drawTank(
-  { state, timeSinceLastUpdate, ctx },
+  { state, timeSinceLastUpdate, context },
   origin,
   playerName,
   tank
@@ -63,69 +63,69 @@ function drawTank(
   const time = state.time + timeSinceLastUpdate;
 
   // setup the transform for the tank
-  ctx.save();
+  context.save();
   const delta = state.deltaPosition(tank.position, origin);
-  ctx.translate(delta.x, delta.y);
-  ctx.scale(0.5, 0.5);
+  context.translate(delta.x, delta.y);
+  context.scale(0.5, 0.5);
   const rotation = tank.rotation + state.assets.tankAttributes.baseRotation;
-  ctx.rotate(rotation);
+  context.rotate(rotation);
 
   // draw the explosion if the tank is dead
   if (tank.dead) {
     const explosionTime = time - tank.deadAt;
-    drawAnimationFrame(state.assets.explosionAnimation, explosionTime, ctx);
-    ctx.restore();
+    drawAnimationFrame(state.assets.explosionAnimation, explosionTime, context);
+    context.restore();
     return;
   }
 
   // draw the tank tracks
   const trackTime =
     tank.input.moving != 0 || tank.input.turning != 0 ? time : 0;
-  ctx.save();
-  ctx.translate(-state.assets.tankAttributes.trackOffset, 0);
-  drawLoopedAnimation(state.assets.trackAnimation, trackTime, ctx);
-  ctx.restore();
+  context.save();
+  context.translate(-state.assets.tankAttributes.trackOffset, 0);
+  drawLoopedAnimation(state.assets.trackAnimation, trackTime, context);
+  context.restore();
 
-  ctx.save();
-  ctx.translate(state.assets.tankAttributes.trackOffset, 0);
-  drawLoopedAnimation(state.assets.trackAnimation, trackTime, ctx);
-  ctx.restore();
+  context.save();
+  context.translate(state.assets.tankAttributes.trackOffset, 0);
+  drawLoopedAnimation(state.assets.trackAnimation, trackTime, context);
+  context.restore();
 
   // draw the hull
-  drawCentered(state.assets.hullImage, ctx);
+  drawCentered(state.assets.hullImage, context);
 
   // draw the turret
   const pivot = state.assets.tankAttributes.turretPivotOffset;
-  ctx.translate(0, pivot);
-  ctx.rotate(tank.turretRotation);
-  ctx.translate(0, -pivot);
+  context.translate(0, pivot);
+  context.rotate(tank.turretRotation);
+  context.translate(0, -pivot);
 
-  drawCentered(state.assets.turretImage, ctx);
+  drawCentered(state.assets.turretImage, context);
 
   //draw the flash
   if (tank.fireCooldown > 0) {
-    ctx.translate(0, -state.assets.tankAttributes.barrelLength);
+    context.translate(0, -state.assets.tankAttributes.barrelLength);
     const flashTime =
       state.coolDownTime - tank.fireCooldown + timeSinceLastUpdate;
 
-    drawAnimationFrame(state.assets.flashAnimation, flashTime, ctx);
+    drawAnimationFrame(state.assets.flashAnimation, flashTime, context);
   }
 
-  ctx.restore();
+  context.restore();
 
   // draw player name above tank
   if (playerName) {
-    ctx.save();
-    ctx.font = "20px sans-serif";
+    context.save();
+    context.font = "20px sans-serif";
     // lighter weight
-    ctx.font = "lighter " + ctx.font;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
+    context.font = "lighter " + context.font;
+    context.textAlign = "center";
+    context.textBaseline = "bottom";
     // partially transparent
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = "white";
-    ctx.fillText(playerName, delta.x, delta.y - 50);
-    ctx.restore();
+    context.globalAlpha = 0.75;
+    context.fillStyle = "white";
+    context.fillText(playerName, delta.x, delta.y - 50);
+    context.restore();
   }
 }
 
@@ -134,29 +134,29 @@ function drawTank(
  * @param {Vector2D} origin
  * @param {Bullet} bullet
  */
-function drawBullet({ state, timeSinceLastUpdate, ctx }, origin, bullet) {
+function drawBullet({ state, timeSinceLastUpdate, context }, origin, bullet) {
   const delta = state.deltaPosition(bullet.position, origin);
   // Since the frame rate may be higher than the update rate, we want to update
   // the position of the bullet based on the time since the last update to keep the
   // bullet motion smooth
   delta.x += bullet.velocity.x * timeSinceLastUpdate;
   delta.y += bullet.velocity.y * timeSinceLastUpdate;
-  ctx.beginPath();
-  ctx.arc(delta.x, delta.y, 5, 0, 2 * Math.PI);
-  ctx.fillStyle = "black";
-  ctx.fill();
+  context.beginPath();
+  context.arc(delta.x, delta.y, 5, 0, 2 * Math.PI);
+  context.fillStyle = "black";
+  context.fill();
 }
 
 /**
  * @param {DrawParams} params
  * @param {Vector2D} origin
  */
-function drawGround({ state, ctx }, origin) {
+function drawGround({ state, context }, origin) {
   const tileWidth = state.assets.groundTiles[0].width - 1;
   const tileHeight = state.assets.groundTiles[0].height - 1;
 
-  const numXTiles = Math.ceil(ctx.canvas.width / tileWidth);
-  const numYTiles = Math.ceil(ctx.canvas.height / tileHeight);
+  const numXTiles = Math.ceil(context.canvas.width / tileWidth) + 1;
+  const numYTiles = Math.ceil(context.canvas.height / tileHeight) + 1;
 
   for (let x = 0; x <= numXTiles; x++) {
     for (let y = 0; y <= numYTiles; y++) {
@@ -178,22 +178,22 @@ function drawGround({ state, ctx }, origin) {
       // "random" tile, but deterministic based on the tile position
       const tile = pcg.choose(state.assets.groundTiles);
 
-      ctx.save();
-      ctx.translate(offsetX, offsetY);
-      ctx.drawImage(tile, 0, 0);
-      ctx.restore();
+      context.save();
+      context.translate(offsetX, offsetY);
+      context.drawImage(tile, 0, 0);
+      context.restore();
     }
   }
 }
 
 /** @param {DrawParams} params */
 export function draw(params) {
-  const { clientId, state, ctx } = params;
+  const { clientId, state, context } = params;
 
   // clear the canvas
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 
-  ctx.save();
+  context.save();
 
   // tank my not exist immediately after joining as the join message arrives
   // after we get the game state
@@ -202,9 +202,32 @@ export function draw(params) {
   // center the camera on our tank
   const origin = ourTank ? ourTank.position : { x: 0, y: 0 };
 
-  ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+  context.translate(context.canvas.width / 2, context.canvas.height / 2);
 
   drawGround(params, origin);
+
+  // draw the ground tracks
+  for (const track of state.groundTracks) {
+    const time = state.time + params.timeSinceLastUpdate;
+
+    // for each ground track position  draw two tread marks
+    context.save();
+    // opacify the tread marks as they get older
+    context.globalAlpha = Math.max(0, 0.5 - (time - track.time) / 10);
+
+    const delta = state.deltaPosition(track.pos, origin);
+    context.translate(delta.x, delta.y);
+    context.scale(0.5, 0.5);
+    context.rotate(track.rotation + Math.PI / 2);
+    context.save();
+    context.translate(-state.assets.tankAttributes.trackOffset, 0);
+    drawCentered(state.assets.groundTrackImage, context);
+    context.restore();
+
+    context.translate(state.assets.tankAttributes.trackOffset, 0);
+    drawCentered(state.assets.groundTrackImage, context);
+    context.restore();
+  }
 
   //draw the bullets
   for (const bullet of state.bullets) {
@@ -220,5 +243,5 @@ export function draw(params) {
     drawTank(params, origin, playerName, tank);
   }
 
-  ctx.restore();
+  context.restore();
 }

@@ -58,9 +58,11 @@ export async function loadAssets() {
   ];
 
   const groundTiles = [
-    loadImage("./assets/Ground_Tile_01_A.png"),
-    loadImage("./assets/Ground_Tile_02_A.png"),
+    loadImage("./assets/Ground_Tile_01_B.png"),
+    loadImage("./assets/Ground_Tile_02_B.png"),
   ];
+
+  const groundTrackImagePromise = loadImage("./assets/Tire_Track_02.png");
 
   const hullImagePromise = loadImage("./assets/Hull_02.png");
   const turretImagePromise = loadImage("./assets/Gun_01.png");
@@ -68,19 +70,24 @@ export async function loadAssets() {
   const shootSoundPromise = loadAudio("./assets/shoot.wav");
 
   // Await all promises
-  const [hullImage, turretImage, explodeSound, shootSound] = await Promise.all([
-    hullImagePromise,
-    turretImagePromise,
-    explodeSoundPromise,
-    shootSoundPromise,
-  ]);
+  const [hullImage, turretImage, groundTrackImage, explodeSound, shootSound] =
+    await Promise.all([
+      hullImagePromise,
+      turretImagePromise,
+      groundTrackImagePromise,
+      explodeSoundPromise,
+      shootSoundPromise,
+    ]);
 
   return {
     hullImage,
     turretImage,
+    groundTrackImage,
     tankAttributes: {
       baseRotation: Math.PI / 2,
       trackOffset: 65,
+      groundTrackStep: 10,
+      groundTrackOffset: 20,
       turretPivotOffset: 40,
       turretSize: { width: 94, height: 212 },
       barrelLength: 130,

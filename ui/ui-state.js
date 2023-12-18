@@ -3,8 +3,8 @@ import { Identity } from "../lib/networking/identity.js";
 import { NetworkedGame } from "../lib/networking/networked-game.js";
 import { GameState } from "../tank/game-state.js";
 
-/** @typedef {import("../tank/game-state.js").GameEvent} GameEvent */
-/** @typedef {import("../tank/game-state.js").StateEvent} StateEvent */
+/** @typedef {import("../tank/game-state.js").GameInputEvent} GameInputEvent */
+/** @typedef {import("../tank/game-state.js").GameOutputEvent} GameOutputEvent */
 
 /** @typedef {{ ui_state: "main"; errorMsg?: string }} MainState */
 /**
@@ -12,7 +12,8 @@ import { GameState } from "../tank/game-state.js";
  *   ui_state: "playing";
  *   joinLink: string;
  *   isHost: boolean;
- *   networkedGame: NetworkedGame<GameEvent, StateEvent, GameState>;
+ *   networkedGame: NetworkedGame<GameInputEvent, GameOutputEvent, GameState>;
+ *   gameState: GameState;
  * }} PlayingState
  */
 /** @typedef {{ ui_state: "starting"; msg: string }} StartingState */
@@ -23,15 +24,18 @@ export const mainState = { ui_state: "main" };
 
 /**
  * @param {string} joinToken
- * @param {NetworkedGame<GameEvent, StateEvent, GameState>} networkedGame
+ * @param {NetworkedGame<GameInputEvent, GameOutputEvent, GameState>} networkedGame
+ * @param {GameState} gameState
  * @returns {(state: State) => PlayingState}
  */
-export const transition_playing = (joinToken, networkedGame) => {
-  const joinLink = window.location.href + "#" + joinToken;
+export const transition_playing = (joinToken, networkedGame, gameState) => {
   const isHost = networkedGame.isHost;
-  if (isHost) {
-    // Otherwise we get yelled at for not being triggered by a user action
-    navigator.clipboard.writeText(joinLink);
+  const joinLink = joinToken ? window.location.href + "#" + joinToken : "";
+  if (joinLink) {
+    if (isHost) {
+      // Otherwise we get yelled at for not being triggered by a user action
+      navigator.clipboard.writeText(joinLink);
+    }
   }
   const playerName = localStorage.getItem("playerName");
   if (playerName) {
@@ -45,6 +49,7 @@ export const transition_playing = (joinToken, networkedGame) => {
     joinLink,
     isHost,
     networkedGame,
+    gameState,
   });
 };
 
@@ -66,6 +71,30 @@ export const transition_error = (errorMsg) => (_state) => ({
   errorMsg,
 });
 
+
+/** @param {State} state */
+export const transition_single_player_game = (state) => {
+  if (state.ui_state !== "main") {
+    return state;
+  }
+
+  const f = async () => {
+    const gameState = await GameState.init();
+
+    try {
+      const { networkedGame } = await NetworkedGame.singlePlayerGame(gameState);
+
+      return transition_playing("", networkedGame, gameState);
+    } catch (err) {
+      console.error(err);
+      return transition_error(`Error starting host: ${err}`);
+    }
+  };
+  f().then(dispatch);
+
+  return transition_starting("Starting Host")(state);
+};
+
 /** @param {State} state */
 export const transition_host_game = (state) => {
   if (state.ui_state !== "main") {
@@ -78,7 +107,7 @@ export const transition_host_game = (state) => {
     try {
       const { networkedGame, token } = await NetworkedGame.hostGame(gameState);
 
-      return transition_playing(token, networkedGame);
+      return transition_playing(token, networkedGame, gameState);
     } catch (err) {
       console.error(err);
       return transition_error(`Error starting host: ${err}`);
@@ -94,7 +123,9 @@ export const transition_host_game = (state) => {
  * @returns {(state: State) => State}
  */
 export const transition_join_game = (joinToken) => (state) => {
-  if (state.ui_state !== "main") {
+  if (state.ui_state === "playing") {
+    state.networkedGame.disconnect(); // can I make this automatic?
+  } else if (state.ui_state !== "main") {
     return state;
   }
   const f = async () => {
@@ -110,19 +141,15 @@ export const transition_join_game = (joinToken) => (state) => {
         }
       }
 
-      const onDisconnect = () => {
-        dispatch(transition_error("Disconnected from game"));
-      };
-
-      const { networkedGame, identity } = await NetworkedGame.joinGame(
-        joinToken,
-        GameState.deserialize,
-        onDisconnect,
-        existingIdentity
-      );
+      const { networkedGame, identity, gameState } =
+        await NetworkedGame.joinGame(
+          joinToken,
+          GameState.deserialize,
+          existingIdentity
+        );
       localStorage.setItem("identity", JSON.stringify(await identity.export()));
 
-      return transition_playing(joinToken, networkedGame);
+      return transition_playing(joinToken, networkedGame, gameState);
     } catch (err) {
       console.error(err);
       return transition_error(`Error joining game: ${err}`);

@@ -1,11 +1,11 @@
 import { render, html } from "../not-react.js";
 import { dispatch } from "../app.js";
-import { draw } from "../tank/draw.js";
 import { ResponsiveCanvasElement } from "../lib/responsive-canvas/responsive-canvas.js";
 import { validateInstanceOf } from "../utils.js";
 import { keyHandlers } from "../tank/input.js";
 import { renderScoreboard } from "./scoreboard.js";
 import { transition_error } from "./ui-state.js";
+import { onFrame } from "../tank/onFrame.js";
 
 /** @param {import("./ui-state.js").PlayingState} state */
 export function Playing(state) {
@@ -19,6 +19,15 @@ export function Playing(state) {
     <div id="scoreboard" class="scoreboard"></div>
 
     <dialog id="settingsDialog">
+      <label
+        >Controls:
+        <ul>
+          <li>Arrow keys to move</li>
+          <li>Space to shoot</li>
+          <li>'A' and 'D' to rotate turret</li>
+        </ul>
+      </label>
+
       <form id="settingsForm" method="dialog">
         <label
           >Player Name:
@@ -28,17 +37,18 @@ export function Playing(state) {
             id="playerName"
             placeholder="Enter your player name"
         /></label>
-        <label
-          >Join Link:
-          <div class="flex-row">
-            <input type="text" id="joinLink" value="${joinLink}" readonly />
-            <button type="button" id="copyButton" title="Copy to Clipboard">
-              📋
-            </button>
-          </div>
-        </label>
+        ${joinLink !== ""
+          ? html`<label
+              >Join Link:
+              <div class="flex-row">
+                <input type="text" id="joinLink" value="${joinLink}" readonly />
+                <button type="button" id="copyButton" title="Copy to Clipboard">
+                  📋
+                </button>
+              </div>
+            </label>`
+          : html``}
         <button id="backButton">Back</button>
-        <button id="disconnectButton">Disconnect</button>
       </form>
     </dialog>
   `);
@@ -55,6 +65,14 @@ export function Playing(state) {
       settingsDialog.showModal();
     }
   };
+
+  // escape key toggles the settings dialog
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      toggleDialog();
+      e.preventDefault();
+    }
+  });
 
   node.querySelector("#settingsButton")?.addEventListener("click", () => {
     toggleDialog();
@@ -87,49 +105,37 @@ export function Playing(state) {
   );
 
   state.networkedGame.addWatcher(
-    () => JSON.stringify(state.networkedGame.state.scores),
+    () => JSON.stringify(state.gameState.scores),
     (_prev, _next) => {
-      renderScoreboard(state.networkedGame.state, scoreboard);
+      renderScoreboard(state.gameState, scoreboard);
     }
   );
-  renderScoreboard(state.networkedGame.state, scoreboard);
+  renderScoreboard(state.gameState, scoreboard);
 
   state.networkedGame.addWatcher(
-    () =>
-      state.networkedGame.state.scores[state.networkedGame.clientId]
-        ?.playerName,
-    (prev, next) => {
+    () => state.gameState.scores[state.networkedGame.clientId]?.playerName,
+    (_prev, next) => {
       node.querySelector("#playerName")?.setAttribute("value", next);
     }
   );
 
-  /** @param {HTMLAudioElement} sound */
-  const playSound = (sound) => {
-    const clone = /** @type {HTMLAudioElement} */ (sound.cloneNode());
-    clone.play();
-  };
-
   responsiveCanvas.onFrame((e) => {
     const { context, time } = e.detail;
 
-    if (
-      state.networkedGame.update(time, (stateEvent) => {
-        if (stateEvent.type === "shoot") {
-          playSound(state.networkedGame.state.assets.shootSound);
-        } else if (stateEvent.type === "died") {
-          playSound(state.networkedGame.state.assets.explodeSound);
-        }
-      })
-    ) {
+    const { disconnected, timeSinceLastUpdate, outputEvents } =
+      state.networkedGame.update(time);
+
+    if (disconnected) {
       dispatch(transition_error("Disconnected from game"));
+    } else {
+      onFrame(
+        timeSinceLastUpdate,
+        context,
+        state.networkedGame.clientId,
+        state.gameState,
+        outputEvents
+      );
     }
-    const timeSinceLastUpdate = state.networkedGame.timeSinceLastUpdate();
-    draw({
-      clientId: state.networkedGame.clientId,
-      state: state.networkedGame.state,
-      timeSinceLastUpdate,
-      ctx: context,
-    });
   });
 
   const { onkeydown, onkeyup } = keyHandlers((event) => {
