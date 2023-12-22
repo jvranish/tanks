@@ -9,6 +9,8 @@ import { keyHandlers } from "../tank/input.js";
 import { renderScoreboard } from "./scoreboard.js";
 import { transitionError } from "./ui-state.js";
 import { onFrame } from "../tank/onFrame.js";
+import { NetworkedGame } from "../lib/networking/networked-game.js";
+import { Server } from "../lib/networking/server.js";
 
 /**
  * @param {HTMLElement} element
@@ -55,6 +57,17 @@ export function renderPlaying(element, state) {
             </div>
           </label>
           <button>Back</button>
+          ${NetworkedGame.debug && state.networkedGame.isHost
+            ? html`
+                <button
+                  type="button"
+                  id="collectDiagnostics"
+                  title="Collect Diagnostics"
+                >
+                  Collect Diagnostics 📝
+                </button>
+              `
+            : html``}
         </form>
       </dialog>
     `
@@ -70,6 +83,22 @@ export function renderPlaying(element, state) {
   });
 
   const { settingsDialog, scoreboard, canvas } = elements;
+
+  if (NetworkedGame.debug && state.networkedGame.isHost) {
+    const { collectDiagnostics } = findElements(node, {
+      collectDiagnostics: HTMLButtonElement,
+    });
+    collectDiagnostics.addEventListener("click", async () => {
+      if (state.networkedGame.network instanceof Server) {
+        const collectedDiagnostics =
+          await state.networkedGame.network.collectDiagnostics();
+        // copy to clipboard
+        navigator.clipboard.writeText(
+          JSON.stringify(collectedDiagnostics, null, 2)
+        );
+      }
+    });
+  }
 
   const toggleDialog = () => {
     if (settingsDialog.open) {

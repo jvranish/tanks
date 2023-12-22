@@ -372,6 +372,11 @@ export class GameState {
    * @param {number} dt - The time delta.
    */
   updateFireBullet(tank, dt) {
+    if (tank.dead){
+      // because we can get here from `onEvent` we need to check if the tank is
+      // dead again
+      return;
+    }
     // update the cooldown based on the time
     if (tank.fireCooldown > 0) {
       tank.fireCooldown -= dt;

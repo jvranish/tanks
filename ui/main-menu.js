@@ -20,7 +20,7 @@ export function renderMainMenu(element, state) {
       <div class="main-menu flex-column">
         <h1>Tank Game!</h1>
         <button class="btn" id="singlePlayerButton">Single Player</button>
-        <button class="btn" id="multiplayerButton">Multiplayer</button>
+        <button class="btn" id="multiplayerButton">Host Game</button>
       </div>
       <dialog id="errorDialog">
         <form class="flex-column" method="dialog">
