@@ -11,7 +11,7 @@ import {
 
 /**
  * @param {HTMLElement} element
- * @param {import("./ui-state.js").MainState} state
+ * @param {MainState} state
  */
 export function renderMainMenu(element, state) {
   const node = render(
@@ -25,7 +25,7 @@ export function renderMainMenu(element, state) {
       <dialog id="errorDialog">
         <form class="flex-column" method="dialog">
           <strong>Error</strong>
-          <p>${state.errorMsg}</p>
+          <p>${state.errorMsg ?? ""}</p>
           <button autofocus>Close</button>
         </form>
       </dialog>

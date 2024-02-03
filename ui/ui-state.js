@@ -3,22 +3,8 @@ import { NetworkedGame } from "../lib/networking/networked-game.js";
 import { GameState } from "../tank/game-state.js";
 import { hostGame, joinGame, singlePlayerGame } from "./ui-actions.js";
 
-/** @typedef {import("../tank/game-state.js").GameInputEvent} GameInputEvent */
-/** @typedef {import("../tank/game-state.js").GameOutputEvent} GameOutputEvent */
-
-/** @typedef {{ ui_state: "main"; errorMsg?: string }} MainState */
-/**
- * @typedef {{
- *   ui_state: "playing";
- *   joinLink: string;
- *   isHost: boolean;
- *   networkedGame: NetworkedGame<GameInputEvent, GameOutputEvent, GameState>;
- *   gameState: GameState;
- * }} PlayingState
- */
-/** @typedef {{ ui_state: "join_menu"; token: string }} JoinMenuState */
-/** @typedef {{ ui_state: "starting"; msg: string }} StartingState */
-/** @typedef {MainState | JoinMenuState | StartingState | PlayingState} State */
+// Not necessary for the game to work, but useful for debugging.
+NetworkedGame.debug = true;
 
 /** @type {State} */
 export const mainState = { ui_state: "main" };
@@ -49,21 +35,16 @@ export const transitionJoinMenu = (token) => (state) => {
 
 /**
  * @param {string} joinToken
- * @param {NetworkedGame<GameInputEvent, GameOutputEvent, GameState>} networkedGame
+ * @param {(text: string) => void} joinLinkCopy
+ * @param {NetworkedGame} networkedGame
  * @param {GameState} gameState
  * @returns {(state: State) => PlayingState}
  */
-export const transitionPlaying = (joinToken, networkedGame, gameState) => {
+export const transitionPlaying = (joinToken, joinLinkCopy, networkedGame, gameState) => {
   const isHost = networkedGame.isHost;
   const joinLink = joinToken ? window.location.href + "#" + joinToken : "";
   if (joinLink) {
-    if (isHost) {
-      // Otherwise we get yelled at for not being triggered by a user action.
-      // Still doesn't work in Safari, but I can't fix that because generating
-      // the token requires awaiting on promises returned from the Crypto API,
-      // so 🤷‍♂️ Users can still get the link from the settings dialog.
-      navigator.clipboard.writeText(joinLink);
-    }
+    joinLinkCopy(joinLink);
   }
   return (_state) => ({
     ui_state: "playing",

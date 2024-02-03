@@ -12,7 +12,7 @@ const playSound = (sound) => {
  * @param {CanvasRenderingContext2D} context
  * @param {string} clientId
  * @param {GameState} state
- * @param {import("./game-state.js").GameOutputEvent[]} outputEvents
+ * @param {GameOutputEvent[]} outputEvents
  */
 export function onFrame(
   timeSinceLastUpdate,

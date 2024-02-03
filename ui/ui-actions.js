@@ -3,6 +3,7 @@ import { NetworkedGame } from "../lib/networking/networked-game.js";
 import { loadAudioAssets } from "../tank/assets.js";
 import { GameState } from "../tank/game-state.js";
 import { transitionError, transitionPlaying } from "./ui-state.js";
+import { connect, listen } from "../lib/webrtc-sockets/webrtc-sockets.js";
 
 
 export async function singlePlayerGame() {
@@ -11,7 +12,7 @@ export async function singlePlayerGame() {
   try {
     const { networkedGame } = await NetworkedGame.singlePlayerGame(gameState);
 
-    return transitionPlaying("", networkedGame, gameState);
+    return transitionPlaying("", () => {}, networkedGame, gameState);
   } catch (err) {
     console.error(err);
     return transitionError(`Error starting host: ${err}`);
@@ -19,12 +20,16 @@ export async function singlePlayerGame() {
 }
 
 export async function hostGame() {
+  const copy = copyToClipboard();
+
   const gameState = await GameState.init();
 
   try {
-    const { networkedGame, token } = await NetworkedGame.hostGame(gameState);
+    const { token, start: startListen } = await listen();
+    const { networkedGame, onConnect } = await NetworkedGame.hostGame(gameState);
+    const { stop } = await startListen({ onConnect });
 
-    return transitionPlaying(token, networkedGame, gameState);
+    return transitionPlaying(token, copy, networkedGame, gameState);
   } catch (err) {
     console.error(err);
     return transitionError(`Error starting host: ${err}`);
@@ -33,6 +38,7 @@ export async function hostGame() {
 
 /** @param {string} joinToken */
 export async function joinGame(joinToken) {
+  const copy = copyToClipboard();
   // We need to do this ahead of time so that the audio is allowed by the browser.
   // Safari is especially strict about not allowing audio to play unless it is
   // initiated by a user action. Pre-loading audio assets seems to be enough to
@@ -54,18 +60,48 @@ export async function joinGame(joinToken) {
       }
     }
 
+    let channel = await connect(joinToken);
     // If identity was undefined we'll get a new one back
     const { networkedGame, identity, gameState } = await NetworkedGame.joinGame(
-      joinToken,
+      channel,
       GameState.deserialize,
       existingIdentity
     );
     // Save the identity so we can use it next time
     localStorage.setItem("identity", JSON.stringify(await identity.export()));
 
-    return transitionPlaying(joinToken, networkedGame, gameState);
+    return transitionPlaying(joinToken, copy, networkedGame, gameState);
   } catch (err) {
     console.error(err);
     return transitionError(`Error joining game: ${err}`);
+  }
+}
+
+
+/**
+ * Copy text to the clipboard. This function returns a function that takes a
+ * string and copies it to the clipboard. We have to do it this way because
+ * safari won't let you copy to the clipboard without a user action.
+ */
+export function copyToClipboard() {
+  if (typeof ClipboardItem && navigator.clipboard.write) {
+    /** @type {(text: string) => void} */
+    let r = () => {};
+    /** @type {Promise<Blob>} */
+    let p = new Promise((resolve, reject) => {
+      r = (text) => resolve(new Blob([text], { type: "text/plain" }));
+    });
+    navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": p,
+      }),
+    ]);
+    return r;
+  } else {
+    // for firefox
+    // see: https://wolfgangrittner.dev/how-to-use-clipboard-api-in-firefox/
+    return (/** @type {string} */ text) => {
+      navigator.clipboard.writeText(text);
+    };
   }
 }

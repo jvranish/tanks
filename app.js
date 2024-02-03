@@ -1,7 +1,7 @@
 import { createStore } from "./lib/not-react-redux/not-redux.js";
 import { renderMainMenu } from "./ui/main-menu.js";
 import { renderPlaying } from "./ui/playing.js";
-import { mainState, transitionJoinGame, transitionJoinMenu } from "./ui/ui-state.js";
+import { mainState, transitionJoinMenu } from "./ui/ui-state.js";
 import { renderStarting } from "./ui/starting.js";
 import { renderJoinMenu } from "./ui/join-menu.js";
 

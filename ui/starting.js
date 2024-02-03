@@ -2,7 +2,7 @@ import { render, html } from "../lib/not-react-redux/not-react.js";
 
 /**
  * @param {HTMLElement} element
- * @param {import("./ui-state.js").StartingState} state
+ * @param {StartingState} state
  */
 export function renderStarting(element, state) {
   render(

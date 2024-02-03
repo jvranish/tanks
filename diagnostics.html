@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tank Game Diagnostics</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script type="module" src="./diagnostics.js"></script>
+</head>
+<body>
+  <div style="width: 72ch; margin:auto">
+    <h1>Tank Game Diagnostics</h1>
+    <p>This provides an easy way to debug non-determinism issues in the game. On
+    the host, after you've played a game for a while, you can click the
+    "Download Diagnostics 🛠️" button in the settings dialog to download
+    diagnostics. You can then load those diagnostics here and this page will
+    turn green if a replay of all events resulted in the same end states.</p>
+    <p>If it turns red, then something went wrong, but you can debug what went
+    wrong here without having to reproduce the problem live.</p>
+    <p>The most common type of problem I run into here is accidentally mixing
+    external state into GameState in <code>update()</code>. For example,
+    accidentally using <code>Math.random()</code> instead of a pseudo-random
+    number generator, who's state can be stored in the game state</p>
+    <p>There are some sample diagnostics in <code>test-diagnostics.json</code></p>
+    <input type="file" id="file-input" accept=".json">
+</body>
+</html>

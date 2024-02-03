@@ -12,7 +12,7 @@ import { transitionJoinGame, transitionMainMenu } from "./ui-state.js";
  * us to play audio.
  *
  * @param {HTMLElement} element
- * @param {import("./ui-state.js").JoinMenuState} state
+ * @param {JoinMenuState} state
  */
 export function renderJoinMenu(element, state) {
   const node = render(

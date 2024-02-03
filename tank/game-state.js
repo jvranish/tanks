@@ -1,57 +1,5 @@
 import { PCG32 } from "../lib/pcg/pcg.js";
 import { loadAssets } from "./assets.js";
-
-/** @typedef {{ x: number; y: number }} Vector2D */
-
-/**
- * @typedef {Object} Tank
- * @property {string} id - The id of the tank.
- * @property {Vector2D} position - The position of the tank.
- * @property {number} rotation - The rotation of the tank.
- * @property {number} turretRotation - The rotation of the tank's turret.
- * @property {number} fireCooldown - How long until the tank can fire again.
- * @property {boolean} dead - Whether the tank is dead.
- * @property {number} deadAt - The time the tank died.
- * @property {TankInput} input - The input state of the tank.
- * @property {number} distanceTraveledSinceLastGroundTrack - The distance
- *   traveled since the last ground track.
- */
-
-/**
- * @typedef {Object} Bullet
- * @property {string} firingTankId - The id of the tank that fired the bullet.
- * @property {Vector2D} startPosition - The start position of the bullet (used
- *   to limit travel distance)
- * @property {Vector2D} position - The position of the bullet.
- * @property {Vector2D} velocity - The velocity of the bullet.
- */
-
-/**
- * @typedef {{
- *   moving: number;
- *   turning: number;
- *   turningTurret: number;
- *   isFiring: boolean;
- * }} TankInput
- */
-
-/**
- * @typedef {{
- *   type: "tank";
- *   input: TankInput;
- * }} TankEvent
- */
-
-/**
- * @typedef {{
- *   type: "setPlayerName";
- *   playerName: string;
- * }} SetPlayerNameEvent
- */
-
-/** @typedef {TankEvent | SetPlayerNameEvent} GameInputEvent */
-/** @typedef {{ type: "shoot" } | { type: "died" }} GameOutputEvent */
-
 export class GameState {
   /** @param {Awaited<ReturnType<typeof loadAssets>>} assets */
   constructor(assets) {
@@ -372,7 +320,7 @@ export class GameState {
    * @param {number} dt - The time delta.
    */
   updateFireBullet(tank, dt) {
-    if (tank.dead){
+    if (tank.dead) {
       // because we can get here from `onEvent` we need to check if the tank is
       // dead again
       return;
@@ -446,9 +394,11 @@ export class GameState {
 
   /**
    * @param {string} clientId
-   * @param {GameInputEvent} peerEvent
+   * @param {string} peerEventData
    */
-  onEvent(clientId, peerEvent) {
+  onEvent(clientId, peerEventData) {
+    /** @type {GameInputEvent} */
+    const peerEvent = JSON.parse(peerEventData);
     if (peerEvent.type === "setPlayerName") {
       this.scores[clientId].playerName = peerEvent.playerName;
     } else if (peerEvent.type === "tank") {
@@ -459,6 +409,13 @@ export class GameState {
         this.updateFireBullet(tank, 0);
       }
     }
+  }
+
+  /**
+   * @param {GameInputEvent} event
+   */
+  static serializeEvent(event) {
+    return JSON.stringify(event);
   }
 
   /**

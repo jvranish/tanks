@@ -22,6 +22,7 @@ async function loadImage(src) {
 async function loadAudio(src) {
   const audio = new Audio(src);
   return new Promise((resolve, reject) => {
+    audio.load();
     audio.addEventListener("canplaythrough", () => {
       resolve(audio);
     });

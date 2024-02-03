@@ -17,6 +17,5 @@ export function renderScoreboard(element, gameState) {
           </div>
         `
       )
-      .join("")
   );
 }

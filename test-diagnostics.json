@@ -1,0 +1,1057 @@
+{
+  "initialState": "{\"outputEvents\":[],\"tanks\":{},\"bullets\":[],\"scores\":{},\"rng\":{\"state\":\"14002747719647911218\",\"inc\":\"5639601228713293617\"},\"time\":0,\"arenaSize\":{\"x\":2000,\"y\":2000},\"maxBulletDistance\":800,\"tankRespawnTime\":5,\"bulletVelocity\":1000,\"coolDownTime\":1,\"tankWidth\":128,\"tankHeight\":75,\"tankSpeed\":100,\"tankRotationSpeed\":3,\"tankTurretRotationSpeed\":3,\"groundTracks\":[]}",
+  "diagnostics": {
+    "0484048ed47964fd": [
+      {
+        "type": "stateHash",
+        "stateHash": -1643744674,
+        "updates": 0,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerJoined"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 0,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Job\"}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 990,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "stateHash",
+        "stateHash": 318494314,
+        "updates": 0,
+        "msgTime": 9900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerJoined"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 5,
+        "msgTime": 9900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Bob\"}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 90,
+        "msgTime": 9950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 30,
+        "msgTime": 10850,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 25,
+        "msgTime": 11150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 55,
+        "msgTime": 11400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 45,
+        "msgTime": 11950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":true}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 10,
+        "msgTime": 12400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 25,
+        "msgTime": 12500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 20,
+        "msgTime": 12750,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 100,
+        "msgTime": 12950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 115,
+        "msgTime": 13950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 15100,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 15350,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 70,
+        "msgTime": 15600,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 16300,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 16500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 75,
+        "msgTime": 16900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 17650,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 135,
+        "msgTime": 17900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 19250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 50,
+        "msgTime": 19450,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 19950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 55,
+        "msgTime": 20150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 20700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 21100,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 21500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 70,
+        "msgTime": 21700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":true}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 15,
+        "msgTime": 22400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 135,
+        "msgTime": 22550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 23900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 115,
+        "msgTime": 24150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 125,
+        "msgTime": 25300,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 160,
+        "msgTime": 26550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 60,
+        "msgTime": 28150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 50,
+        "msgTime": 28750,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 30,
+        "msgTime": 29250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 70,
+        "msgTime": 29550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 15,
+        "msgTime": 30250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 5,
+        "msgTime": 30400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 15,
+        "msgTime": 30450,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":true}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 10,
+        "msgTime": 30600,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 495,
+        "msgTime": 30700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Job\"}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 10,
+        "msgTime": 35650,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "collectDiagnostics"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 0,
+        "msgTime": 35750,
+        "dt": 10
+      },
+      {
+        "type": "stateHash",
+        "stateHash": -527265651,
+        "updates": 0,
+        "msgTime": 35750,
+        "dt": 10
+      }
+    ],
+    "04e24c464b3614a9": [
+      {
+        "type": "stateHash",
+        "stateHash": -1643744674,
+        "updates": 0,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerJoined"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 0,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Job\"}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 990,
+        "msgTime": 0,
+        "dt": 10
+      },
+      {
+        "type": "stateHash",
+        "stateHash": 318494314,
+        "updates": 0,
+        "msgTime": 9900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerJoined"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 5,
+        "msgTime": 9900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Bob\"}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 90,
+        "msgTime": 9950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 30,
+        "msgTime": 10850,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 25,
+        "msgTime": 11150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 55,
+        "msgTime": 11400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 45,
+        "msgTime": 11950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":true}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 10,
+        "msgTime": 12400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 25,
+        "msgTime": 12500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 20,
+        "msgTime": 12750,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 100,
+        "msgTime": 12950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 115,
+        "msgTime": 13950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 15100,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 15350,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 70,
+        "msgTime": 15600,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 16300,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 16500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 75,
+        "msgTime": 16900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 17650,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 135,
+        "msgTime": 17900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 19250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 50,
+        "msgTime": 19450,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 19950,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 55,
+        "msgTime": 20150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 20700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 40,
+        "msgTime": 21100,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 20,
+        "msgTime": 21500,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 70,
+        "msgTime": 21700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":true}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 15,
+        "msgTime": 22400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 135,
+        "msgTime": 22550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":-1,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 25,
+        "msgTime": 23900,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 115,
+        "msgTime": 24150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 125,
+        "msgTime": 25300,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 160,
+        "msgTime": 26550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 60,
+        "msgTime": 28150,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 50,
+        "msgTime": 28750,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 30,
+        "msgTime": 29250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 70,
+        "msgTime": 29550,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":-1,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 15,
+        "msgTime": 30250,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":1,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 5,
+        "msgTime": 30400,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 15,
+        "msgTime": 30450,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":true}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 10,
+        "msgTime": 30600,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"tank\",\"input\":{\"moving\":0,\"turning\":0,\"turningTurret\":0,\"isFiring\":false}}"
+        },
+        "clientId": "0484048ed47964fd",
+        "updates": 495,
+        "msgTime": 30700,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "peerEvent",
+          "peerEvent": "{\"type\":\"setPlayerName\",\"playerName\":\"Job\"}"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 10,
+        "msgTime": 35650,
+        "dt": 10
+      },
+      {
+        "type": "peerMessage",
+        "peerMessage": {
+          "type": "collectDiagnostics"
+        },
+        "clientId": "04e24c464b3614a9",
+        "updates": 0,
+        "msgTime": 35750,
+        "dt": 10
+      },
+      {
+        "type": "stateHash",
+        "stateHash": -527265651,
+        "updates": 0,
+        "msgTime": 35750,
+        "dt": 10
+      }
+    ]
+  }
+}

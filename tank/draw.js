@@ -1,6 +1,3 @@
-/** @typedef {import("./game-state.js").Tank} Tank */
-/** @typedef {import("./game-state.js").Bullet} Bullet */
-/** @typedef {import("./game-state.js").Vector2D} Vector2D */
 
 import { GameState } from "./game-state.js";
 import { PCG32 } from "../lib/pcg/pcg.js";

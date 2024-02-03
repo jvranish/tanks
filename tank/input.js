@@ -1,4 +1,3 @@
-/** @typedef {import("./game-state.js").TankEvent} TankEvent */
 
 const defaultKeysPressed = {
   ArrowUp: false,
@@ -22,7 +21,7 @@ export function isInputKey(key) {
 
 /**
  * @param {typeof defaultKeysPressed} keysPressed
- * @returns {import("./game-state.js").TankInput}
+ * @returns {TankInput}
  */
 export function tankInputFromKeysPressed(keysPressed) {
   const { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, a, d, " ": space } = keysPressed;
