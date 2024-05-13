@@ -7,6 +7,8 @@ and battle against each other.
 You can try it out at
 [https://jvranish.github.io/tanks/](https://jvranish.github.io/tanks/)
 
+To invite other players to your multiplayer game, you can find a join link in the settings dialog (button in top left of screen)
+
 ## Controls:
 
 - Arrow keys to move
@@ -36,7 +38,7 @@ Some notable features include:
 - New players can join mid-game
 - Non-hosts can leave and re-join the game and pickup where they left off
 - No dedicated server needed, connections are Peer to Peer via WebRTC
-- Abstracts away networking and synchronization. This imposes some architectural constraints (the game must be deterministic, i.e. you can can use a pseudo-random number generator, but no `Math.random`), but free's you from worrying about the networking
+- Abstracts away networking and synchronization. This imposes some architectural constraints (the game must be deterministic, i.e. you can't use no `Math.random`, you must use deterministic pseudo-random number generators instead), but free's you from worrying about the networking
 - Diagnostic tools for debugging de-sync issues
 - Saving replays
 
